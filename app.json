@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "Samora",
+    "slug": "samora-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./samora_logo.jpeg",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./samora_logo.jpeg",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.samora.app",
+      "infoPlist": {
+        "UIBackgroundModes": [
+          "fetch",
+          "remote-notification"
+        ],
+        "NSFaceIDUsageDescription": "Samora needs FaceID to securely access your financial data.",
+        "NSCameraUsageDescription": "Samora needs camera access to scan receipts for quick expense adding."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./samora_logo.jpeg",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.samora.app",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./samora_logo.jpeg"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "root": "./app"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./samora_logo.jpeg",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-notifications"
+    ]
+  }
+}
