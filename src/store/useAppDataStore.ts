@@ -9,8 +9,10 @@ import {
     INITIAL_BILLS,
     INITIAL_BUDGETS,
     INITIAL_GOALS,
+    INITIAL_PLANS,
     INITIAL_TRANSACTIONS,
     INITIAL_WALLETS,
+    PlanRecord,
     TransactionRecord,
     WalletRecord,
 } from '../data/mockData';
@@ -21,11 +23,14 @@ interface AppDataState {
     bills: BillRecord[];
     budgets: BudgetRecord[];
     goals: GoalRecord[];
+    plans: PlanRecord[];
     healthScore: number;
 
     // Computed / Automation
     getHealthScore: () => number;
     checkUpcomingBills: () => void;
+    checkGoalProgress: () => void;
+    checkPlanReminders: () => void;
 
     // Actions
     addTransaction: (tx: Omit<TransactionRecord, 'id'>) => Promise<void>;
@@ -43,6 +48,9 @@ interface AppDataState {
     editGoal: (id: string, updated: Partial<GoalRecord>) => Promise<void>;
     depositGoal: (goalId: string, amount: number) => Promise<void>;
     deleteWallet: (id: string) => Promise<void>;
+    addPlan: (plan: Omit<PlanRecord, 'id' | 'completed'>) => Promise<void>;
+    deletePlan: (id: string) => Promise<void>;
+    togglePlanDone: (id: string) => Promise<void>;
 }
 
 export const useAppDataStore = create<AppDataState>()(
@@ -53,7 +61,8 @@ export const useAppDataStore = create<AppDataState>()(
             bills: INITIAL_BILLS,
             budgets: INITIAL_BUDGETS,
             goals: INITIAL_GOALS,
-            healthScore: 85, // Default Mock
+            plans: INITIAL_PLANS,
+            healthScore: 85,
 
             getHealthScore: () => {
                 const { wallets, bills, budgets } = get();
@@ -248,6 +257,50 @@ export const useAppDataStore = create<AppDataState>()(
 
             deleteWallet: async (id: string) => {
                 set({ wallets: get().wallets.filter((w) => w.id !== id) });
+            },
+
+            checkGoalProgress: () => {
+                const { goals } = get();
+                const today = new Date();
+                const atRisk = goals.filter(g => {
+                    const current = g.current_amount || 0;
+                    const target = g.target_amount || 1;
+                    const pct = (current / target) * 100;
+                    const deadline = new Date(g.deadline);
+                    const daysLeft = Math.ceil((deadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    return daysLeft > 0 && daysLeft <= 7 && pct < 80;
+                });
+                if (atRisk.length > 0) {
+                    const names = atRisk.map(g => g.title).join(', ');
+                    Alert.alert('⚠️ Goals At Risk', `${atRisk.length} goal(s) due soon but under 80%:\n\n${names}\n\nBoost your savings!`);
+                }
+            },
+
+            checkPlanReminders: () => {
+                const { plans } = get();
+                const today = new Date().toISOString().slice(0, 10);
+                const overdue = plans.filter(p => !p.completed && p.date < today);
+                const dueToday = plans.filter(p => !p.completed && p.date === today);
+                if (dueToday.length > 0) {
+                    Alert.alert('📅 Plans Due Today', `You have ${dueToday.length} plan(s) for today. Open the Planner to view them.`);
+                }
+                if (overdue.length > 0) {
+                    Alert.alert('⏰ Overdue Plans', `You have ${overdue.length} overdue plan(s). Open the Planner to review.`);
+                }
+            },
+
+            addPlan: async (newPlan) => {
+                const id = `plan_${Date.now()}`;
+                const item: PlanRecord = { ...newPlan, id, completed: false };
+                set({ plans: [item, ...get().plans] });
+            },
+
+            deletePlan: async (id: string) => {
+                set({ plans: get().plans.filter((p) => p.id !== id) });
+            },
+
+            togglePlanDone: async (id: string) => {
+                set({ plans: get().plans.map((p) => p.id === id ? { ...p, completed: !p.completed } : p) });
             },
         }),
         {

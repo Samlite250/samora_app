@@ -1,129 +1,80 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    Alert,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
-import { AddBillModal } from '../../src/presentation/components/AddBillModal';
 import { useAppDataStore } from '../../src/store/useAppDataStore';
-import { useCurrencyStore } from '../../src/store/useCurrencyStore';
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-];
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function getDaysInMonth(year: number, month: number) {
+    return new Date(year, month + 1, 0).getDate();
+}
+
+function padDate(n: number) {
+    return String(n).padStart(2, '0');
+}
 
 export default function PlannerScreen() {
-    const router = useRouter();
-    const { formatAmount } = useCurrencyStore();
-    const { bills, markBillPaid, deleteBill } = useAppDataStore();
-    const [isAddBillOpen, setIsAddBillOpen] = useState(false);
+    const today = new Date();
+    const [viewYear, setViewYear] = useState(today.getFullYear());
+    const [viewMonth, setViewMonth] = useState(today.getMonth());
+    const [selectedDate, setSelectedDate] = useState(today.toISOString().slice(0, 10));
+    const [noteText, setNoteText] = useState('');
+    const [showAddModal, setShowAddModal] = useState(false);
+    const { plans, addPlan, deletePlan, togglePlanDone } = useAppDataStore();
 
-
-    // Dynamic Calendar State (Default to July 2026 as per app context, or real date)
-    const [currentYear, setCurrentYear] = useState(2026);
-    const [currentMonth, setCurrentMonth] = useState(6); // 0-indexed: 6 = July
-    const [selectedDate, setSelectedDate] = useState<number | null>(23); // Default July 23
-    const [calendarMode, setCalendarMode] = useState<'grid' | 'strip'>('grid');
-
-    // Calendar Math: Generate grid cells for selected month
-    const calendarCells = useMemo(() => {
-        const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
-        const totalDaysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
-
-        const cells = [];
-
-        // Previous month padding
-        for (let i = firstDayIndex - 1; i >= 0; i--) {
-            cells.push({
-                day: prevMonthDays - i,
-                isCurrentMonth: false,
-                fullDateStr: null,
-            });
-        }
-
-        // Current month days
-        for (let day = 1; day <= totalDaysInMonth; day++) {
-            const monthStr = String(currentMonth + 1).padStart(2, '0');
-            const dayStr = String(day).padStart(2, '0');
-            const dateStr = `${currentYear}-${monthStr}-${dayStr}`;
-
-            cells.push({
-                day,
-                isCurrentMonth: true,
-                fullDateStr: dateStr,
-            });
-        }
-
-        // Next month padding to fill grid
-        const remainingCells = 35 - cells.length;
-        if (remainingCells > 0) {
-            for (let day = 1; day <= remainingCells; day++) {
-                cells.push({
-                    day,
-                    isCurrentMonth: false,
-                    fullDateStr: null,
-                });
-            }
-        }
-
+    // Build calendar days for current view
+    const calendarDays = useMemo(() => {
+        const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+        const totalDays = getDaysInMonth(viewYear, viewMonth);
+        const cells: (number | null)[] = Array(firstDay).fill(null);
+        for (let d = 1; d <= totalDays; d++) cells.push(d);
+        while (cells.length % 7 !== 0) cells.push(null);
         return cells;
-    }, [currentYear, currentMonth]);
+    }, [viewYear, viewMonth]);
 
-    // Map bills to dates for indicator dots
-    const billsByDateMap = useMemo(() => {
-        const map: Record<string, any[]> = {};
-        bills.forEach((bill: any) => {
-            const dateKey = bill.due_date; // format YYYY-MM-DD
-            if (dateKey) {
-                if (!map[dateKey]) map[dateKey] = [];
-                map[dateKey].push(bill);
-            }
+    // Plans indexed by date
+    const plansByDate = useMemo(() => {
+        const map: Record<string, typeof plans> = {};
+        plans.forEach(p => {
+            if (!map[p.date]) map[p.date] = [];
+            map[p.date].push(p);
         });
         return map;
-    }, [bills]);
+    }, [plans]);
 
-    // Navigate Months
-    const handlePrevMonth = () => {
-        if (currentMonth === 0) {
-            setCurrentMonth(11);
-            setCurrentYear(prev => prev - 1);
-        } else {
-            setCurrentMonth(prev => prev - 1);
-        }
-        setSelectedDate(null);
+    const selectedPlans = plansByDate[selectedDate] || [];
+
+    const prevMonth = () => {
+        if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+        else setViewMonth(m => m - 1);
     };
 
-    const handleNextMonth = () => {
-        if (currentMonth === 11) {
-            setCurrentMonth(0);
-            setCurrentYear(prev => prev + 1);
-        } else {
-            setCurrentMonth(prev => prev + 1);
-        }
-        setSelectedDate(null);
+    const nextMonth = () => {
+        if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+        else setViewMonth(m => m + 1);
     };
 
-    // Filter bills based on selected date or show all for month
-    const selectedDateStr = selectedDate
-        ? `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`
-        : null;
-
-    const displayedBills = useMemo(() => {
-        if (selectedDateStr) {
-            const directMatches = bills.filter((b: any) => b.due_date === selectedDateStr);
-            if (directMatches.length > 0) return directMatches;
-        }
-        return bills;
-    }, [bills, selectedDateStr]);
-
-    const getDaysDiff = (dateStr: string) => {
-        if (!dateStr) return 0;
-        const diffTime = new Date(dateStr).getTime() - new Date().getTime();
-        return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const handleAddPlan = async () => {
+        if (!noteText.trim()) { Alert.alert('Empty Note', 'Please type something to plan.'); return; }
+        await addPlan({ date: selectedDate, note: noteText.trim() });
+        setNoteText('');
+        setShowAddModal(false);
+        Alert.alert('📅 Plan Added', `Your plan for ${selectedDate} has been saved!`);
     };
+
+    const todayStr = today.toISOString().slice(0, 10);
 
     return (
         <ScreenBackground>
@@ -132,460 +83,229 @@ export default function PlannerScreen() {
                 <View style={styles.header}>
                     <View>
                         <Text style={styles.headerTitle}>Planner</Text>
-                        <Text style={styles.headerSubtitle}>{bills.length} total scheduled items</Text>
+                        <Text style={styles.headerSub}>{plans.filter(p => !p.completed).length} active plans</Text>
                     </View>
-                    <View style={styles.headerActions}>
-                        <TouchableOpacity
-                            style={styles.modeToggleBtn}
-                            onPress={() => setCalendarMode(m => m === 'grid' ? 'strip' : 'grid')}
-                        >
-                            <Ionicons
-                                name={calendarMode === 'grid' ? 'list-outline' : 'grid-outline'}
-                                size={18}
-                                color={COLORS.primary}
-                            />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/(tabs)/bills')}>
-                            <Ionicons name="add" size={22} color={COLORS.primary} />
-                        </TouchableOpacity>
-                    </View>
+                    <TouchableOpacity
+                        style={styles.addBtn}
+                        onPress={() => setShowAddModal(true)}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-
-                    {/* ─── Real Calendar Card ─── */}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                    {/* Calendar Card */}
                     <View style={styles.calendarCard}>
-
-                        {/* Month Navigation Header */}
-                        <View style={styles.monthNavRow}>
-                            <TouchableOpacity style={styles.navArrow} onPress={handlePrevMonth}>
+                        {/* Month Nav */}
+                        <View style={styles.monthNav}>
+                            <TouchableOpacity onPress={prevMonth} style={styles.navBtn}>
                                 <Ionicons name="chevron-back" size={18} color={COLORS.text} />
                             </TouchableOpacity>
-
-                            <View style={styles.monthYearTitleRow}>
-                                <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-                                <Text style={styles.monthYearText}>
-                                    {MONTH_NAMES[currentMonth]} {currentYear}
-                                </Text>
-                            </View>
-
-                            <TouchableOpacity style={styles.navArrow} onPress={handleNextMonth}>
+                            <Text style={styles.monthLabel}>{MONTHS[viewMonth]} {viewYear}</Text>
+                            <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
                                 <Ionicons name="chevron-forward" size={18} color={COLORS.text} />
                             </TouchableOpacity>
                         </View>
 
-                        {/* Weekday Labels Header */}
-                        <View style={styles.weekdaysRow}>
-                            {WEEKDAYS.map((day, idx) => (
-                                <Text key={idx} style={[styles.weekdayLabel, (idx === 0 || idx === 6) && styles.weekendLabel]}>
-                                    {day}
-                                </Text>
-                            ))}
+                        {/* Day Headers */}
+                        <View style={styles.dayHeaders}>
+                            {DAYS.map(d => <Text key={d} style={styles.dayHeaderText}>{d}</Text>)}
                         </View>
 
-                        {/* Calendar Grid View */}
-                        {calendarMode === 'grid' ? (
-                            <View style={styles.gridContainer}>
-                                {calendarCells.map((cell, idx) => {
-                                    const isSelected = cell.isCurrentMonth && selectedDate === cell.day;
-                                    const isToday = cell.isCurrentMonth && currentYear === 2026 && currentMonth === 6 && cell.day === 23;
-                                    const dayBills = cell.fullDateStr ? billsByDateMap[cell.fullDateStr] || [] : [];
-                                    const hasBills = dayBills.length > 0;
-                                    const hasUnpaid = dayBills.some(b => !b.is_paid);
+                        {/* Calendar Grid */}
+                        <View style={styles.grid}>
+                            {calendarDays.map((day, i) => {
+                                if (!day) return <View key={`empty-${i}`} style={styles.cell} />;
+                                const dateStr = `${viewYear}-${padDate(viewMonth + 1)}-${padDate(day)}`;
+                                const isToday = dateStr === todayStr;
+                                const isSelected = dateStr === selectedDate;
+                                const hasPlan = !!(plansByDate[dateStr]?.length);
+                                const hasOverdue = plansByDate[dateStr]?.some(p => !p.completed && dateStr < todayStr);
 
-                                    return (
-                                        <TouchableOpacity
-                                            key={idx}
-                                            disabled={!cell.isCurrentMonth}
-                                            style={[
-                                                styles.gridCell,
-                                                isSelected && styles.cellSelected,
-                                                isToday && !isSelected && styles.cellToday,
-                                            ]}
-                                            onPress={() => setSelectedDate(cell.day)}
-                                            activeOpacity={0.7}
-                                        >
-                                            <Text
-                                                style={[
-                                                    styles.dayText,
-                                                    !cell.isCurrentMonth && styles.dayTextMuted,
-                                                    isSelected && styles.dayTextSelected,
-                                                    isToday && !isSelected && styles.dayTextToday,
-                                                ]}
-                                            >
-                                                {cell.day}
-                                            </Text>
+                                return (
+                                    <TouchableOpacity
+                                        key={dateStr}
+                                        style={[
+                                            styles.cell,
+                                            isSelected && styles.cellSelected,
+                                            isToday && !isSelected && styles.cellToday,
+                                        ]}
+                                        onPress={() => setSelectedDate(dateStr)}>
+                                        <Text style={[
+                                            styles.cellText,
+                                            isSelected && styles.cellTextSelected,
+                                            isToday && !isSelected && { color: COLORS.primary },
+                                        ]}>
+                                            {day}
+                                        </Text>
+                                        {hasPlan && (
+                                            <View style={[
+                                                styles.planDot,
+                                                { backgroundColor: hasOverdue ? COLORS.expense : COLORS.primary }
+                                            ]} />
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
 
-                                            {/* Event indicator dot */}
-                                            {hasBills && (
-                                                <View
-                                                    style={[
-                                                        styles.indicatorDot,
-                                                        hasUnpaid ? styles.dotUnpaid : styles.dotPaid,
-                                                        isSelected && styles.dotSelected,
-                                                    ]}
-                                                />
-                                            )}
-                                        </TouchableOpacity>
-                                    );
-                                })}
+                    {/* Selected Date Plans */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>
+                                {selectedDate === todayStr ? 'Today' : selectedDate}
+                            </Text>
+                            <TouchableOpacity style={styles.smallAddBtn} onPress={() => setShowAddModal(true)}>
+                                <Ionicons name="add" size={14} color={COLORS.primary} />
+                                <Text style={styles.smallAddText}>Add Plan</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        {selectedPlans.length === 0 ? (
+                            <View style={styles.emptyDay}>
+                                <Ionicons name="calendar-outline" size={32} color="#D1D5DB" />
+                                <Text style={styles.emptyDayText}>No plans for this day</Text>
+                                <Text style={styles.emptyDaySub}>Tap "Add Plan" to create one</Text>
                             </View>
                         ) : (
-                            /* Compact Week Strip View */
-                            <View style={styles.stripContainer}>
-                                {calendarCells.filter(c => c.isCurrentMonth).slice(0, 7).map((cell, idx) => {
-                                    const isSelected = selectedDate === cell.day;
-                                    const dayBills = cell.fullDateStr ? billsByDateMap[cell.fullDateStr] || [] : [];
-                                    return (
+                            selectedPlans.map(plan => {
+                                const isOverdue = !plan.completed && plan.date < todayStr;
+                                return (
+                                    <View key={plan.id} style={[styles.planItem, plan.completed && styles.planDone, isOverdue && styles.planOverdue]}>
                                         <TouchableOpacity
-                                            key={idx}
-                                            style={[styles.stripCell, isSelected && styles.cellSelected]}
-                                            onPress={() => setSelectedDate(cell.day)}
-                                        >
-                                            <Text style={[styles.stripDayName, isSelected && styles.dayTextSelected]}>
-                                                {WEEKDAYS[idx % 7]}
-                                            </Text>
-                                            <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
-                                                {cell.day}
-                                            </Text>
-                                            {dayBills.length > 0 && (
-                                                <View style={[styles.indicatorDot, styles.dotUnpaid, isSelected && styles.dotSelected]} />
-                                            )}
+                                            style={[styles.checkbox, plan.completed && styles.checkboxDone]}
+                                            onPress={() => togglePlanDone(plan.id)}>
+                                            {plan.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
                                         </TouchableOpacity>
-                                    );
-                                })}
-                            </View>
-                        )}
-
-                        {/* Filter Status Reset */}
-                        {selectedDate && (
-                            <View style={styles.filterResetRow}>
-                                <Text style={styles.filterResetText}>
-                                    Showing bills for {MONTH_NAMES[currentMonth]} {selectedDate}, {currentYear}
-                                </Text>
-                                <TouchableOpacity onPress={() => setSelectedDate(null)} style={styles.clearFilterBtn}>
-                                    <Text style={styles.clearFilterText}>Show All</Text>
-                                </TouchableOpacity>
-                            </View>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={[styles.planNote, plan.completed && styles.planNoteStrike]}>
+                                                {plan.note}
+                                            </Text>
+                                            {isOverdue && <Text style={styles.overdueLabel}>⏰ Overdue</Text>}
+                                        </View>
+                                        <TouchableOpacity
+                                            onPress={() => Alert.alert('Delete', `Remove "${plan.note}"?`, [
+                                                { text: 'Cancel', style: 'cancel' },
+                                                { text: 'Delete', style: 'destructive', onPress: () => deletePlan(plan.id) }
+                                            ])}>
+                                            <Ionicons name="trash-outline" size={16} color="#9CA3AF" />
+                                        </TouchableOpacity>
+                                    </View>
+                                );
+                            })
                         )}
                     </View>
 
-                    {/* ─── Upcoming Events & Bills List ─── */}
-                    <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>
-                            {selectedDate ? `Bills Due on ${MONTH_NAMES[currentMonth]} ${selectedDate}` : 'All Scheduled Bills & Events'}
-                        </Text>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/bills')}>
-                            <Text style={styles.seeAllText}>Manage Bills</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {displayedBills.length === 0 ? (
-
-                        <View style={styles.emptyCard}>
-                            <Ionicons name="checkmark-circle-outline" size={36} color={COLORS.success} />
-                            <Text style={styles.emptyTitle}>No bills due for this date</Text>
-                            <Text style={styles.emptySub}>You are all caught up for {MONTH_NAMES[currentMonth]} {selectedDate}!</Text>
+                    {/* Upcoming plans overview */}
+                    {plans.filter(p => !p.completed && p.date >= todayStr).length > 0 && (
+                        <View style={styles.section}>
+                            <Text style={styles.sectionTitle}>Upcoming</Text>
+                            {plans
+                                .filter(p => !p.completed && p.date >= todayStr)
+                                .sort((a, b) => a.date.localeCompare(b.date))
+                                .slice(0, 5)
+                                .map(plan => (
+                                    <View key={plan.id} style={styles.upcomingItem}>
+                                        <View style={styles.upcomingDateBadge}>
+                                            <Text style={styles.upcomingDateText}>{plan.date.slice(8)}</Text>
+                                            <Text style={styles.upcomingMonthText}>{MONTHS[parseInt(plan.date.slice(5, 7)) - 1]}</Text>
+                                        </View>
+                                        <Text style={styles.upcomingNote}>{plan.note}</Text>
+                                    </View>
+                                ))
+                            }
                         </View>
-                    ) : (
-                        displayedBills.map((evt: any, idx: number) => {
-                            const daysDiff = getDaysDiff(evt.due_date);
-                            const isPast = daysDiff < 0 && !evt.is_paid;
-                            const color = evt.is_paid ? COLORS.success : isPast ? COLORS.expense : COLORS.warning;
-                            const tagText = evt.is_paid ? 'Paid' : isPast ? 'Overdue' : daysDiff === 0 ? 'Due Today' : `Due in ${daysDiff} days`;
-                            const amountRwf = parseFloat(evt.amount) || 0;
-
-                            return (
-                                <View key={evt.id || idx} style={styles.eventCard}>
-                                    <View style={[styles.eventBar, { backgroundColor: color }]} />
-                                    <View style={[styles.eventIconBg, { backgroundColor: color + '15' }]}>
-                                        <Ionicons name={evt.is_paid ? 'checkmark-circle' : 'flash-outline'} size={18} color={color} />
-                                    </View>
-                                    <View style={styles.eventBody}>
-                                        <View style={styles.eventTitleRow}>
-                                            <Text style={styles.eventTitle}>{evt.title}</Text>
-                                            <View style={[styles.eventTag, { backgroundColor: color + '15' }]}>
-                                                <Text style={[styles.eventTagText, { color }]}>{tagText}</Text>
-                                            </View>
-                                        </View>
-                                        <View style={styles.eventTimeRow}>
-                                            <Ionicons name="time-outline" size={12} color={COLORS.secondaryText} />
-                                            <Text style={styles.eventTime}> Due: {evt.due_date} • {formatAmount(amountRwf)}</Text>
-                                        </View>
-                                        <View style={styles.eventActionsRow}>
-                                            {!evt.is_paid && (
-                                                <TouchableOpacity
-                                                    style={styles.payBtn}
-                                                    onPress={() => markBillPaid(evt.id)}>
-                                                    <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                                                    <Text style={styles.payBtnText}>Mark as Paid</Text>
-                                                </TouchableOpacity>
-                                            )}
-                                            <TouchableOpacity
-                                                style={styles.deleteActionBtn}
-                                                onPress={() => deleteBill(evt.id)}>
-                                                <Ionicons name="trash-outline" size={13} color={COLORS.expense} />
-                                                <Text style={styles.deleteActionText}>Remove</Text>
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                </View>
-                            );
-                        })
                     )}
-
-                    <TouchableOpacity style={styles.addEventBtn} onPress={() => setIsAddBillOpen(true)}>
-                        <Ionicons name="add" size={18} color={COLORS.primary} />
-                        <Text style={styles.addEventText}>Add New Scheduled Bill</Text>
-                    </TouchableOpacity>
-
                 </ScrollView>
 
-                <AddBillModal visible={isAddBillOpen} onClose={() => setIsAddBillOpen(false)} />
+                {/* Add Plan Modal */}
+                <Modal visible={showAddModal} transparent animationType="slide" onRequestClose={() => setShowAddModal(false)}>
+                    <View style={styles.overlay}>
+                        <View style={styles.modalCard}>
+                            <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Add Plan</Text>
+                                <TouchableOpacity onPress={() => setShowAddModal(false)}>
+                                    <Ionicons name="close" size={22} color={COLORS.text} />
+                                </TouchableOpacity>
+                            </View>
 
+                            <Text style={styles.modalLabel}>Date</Text>
+                            <TextInput
+                                style={styles.modalInput}
+                                value={selectedDate}
+                                onChangeText={setSelectedDate}
+                                placeholder="YYYY-MM-DD"
+                                placeholderTextColor="#9CA3AF"
+                            />
+
+                            <Text style={styles.modalLabel}>Plan / Note</Text>
+                            <TextInput
+                                style={[styles.modalInput, { height: 100, textAlignVertical: 'top' }]}
+                                multiline
+                                placeholder="What do you need to do or remember?"
+                                value={noteText}
+                                onChangeText={setNoteText}
+                                placeholderTextColor="#9CA3AF"
+                            />
+
+                            <TouchableOpacity style={styles.saveBtn} onPress={handleAddPlan}>
+                                <Text style={styles.saveBtnText}>Save Plan</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </ScreenBackground>
     );
 }
 
-
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: 'transparent' },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: SIZES.lg,
-        paddingTop: 52,
-        paddingBottom: 14,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEF1F7'
-    },
-    headerTitle: { fontFamily: FONTS.bold, fontSize: 22, color: COLORS.text },
-    headerSubtitle: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, marginTop: 2 },
-    headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-    modeToggleBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${COLORS.primary}12`, alignItems: 'center', justifyContent: 'center' },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
+    headerTitle: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
+    headerSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, marginTop: 2 },
     addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${COLORS.primary}12`, alignItems: 'center', justifyContent: 'center' },
-    scrollContent: { padding: SIZES.lg, paddingBottom: 130, gap: 14 },
-
-    // Calendar Card
-    calendarCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 24,
-        padding: SIZES.md,
-        borderWidth: 1,
-        borderColor: '#EEF1F7',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.04,
-        shadowRadius: 16,
-        elevation: 3,
-    },
-    monthNavRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 14,
-        paddingHorizontal: 4,
-    },
-    monthYearTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    monthYearText: {
-        fontFamily: FONTS.bold,
-        fontSize: 16,
-        color: COLORS.text,
-    },
-    navArrow: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: '#F4F7FB',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    weekdaysRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginBottom: 8,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F4F7FB',
-        paddingBottom: 8,
-    },
-    weekdayLabel: {
-        width: 40,
-        textAlign: 'center',
-        fontFamily: FONTS.semiBold,
-        fontSize: 12,
-        color: COLORS.secondaryText,
-    },
-    weekendLabel: {
-        color: COLORS.primary,
-    },
-    gridContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
-    },
-    gridCell: {
-        width: '14.28%',
-        height: 44,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 12,
-        marginVertical: 2,
-        position: 'relative',
-    },
-    stripContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-around',
-    },
-    stripCell: {
-        paddingVertical: 8,
-        paddingHorizontal: 10,
-        alignItems: 'center',
-        borderRadius: 12,
-    },
-    stripDayName: {
-        fontFamily: FONTS.regular,
-        fontSize: 10,
-        color: COLORS.secondaryText,
-        marginBottom: 4,
-    },
-    cellSelected: {
-        backgroundColor: COLORS.primary,
-        shadowColor: COLORS.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    cellToday: {
-        borderWidth: 1.5,
-        borderColor: COLORS.primary,
-        backgroundColor: `${COLORS.primary}08`,
-    },
-    dayText: {
-        fontFamily: FONTS.semiBold,
-        fontSize: 14,
-        color: COLORS.text,
-    },
-    dayTextMuted: {
-        color: '#D1D5DB',
-        fontFamily: FONTS.regular,
-    },
-    dayTextToday: {
-        color: COLORS.primary,
-        fontFamily: FONTS.bold,
-    },
-    dayTextSelected: {
-        color: '#FFFFFF',
-        fontFamily: FONTS.bold,
-    },
-    indicatorDot: {
-        position: 'absolute',
-        bottom: 4,
-        width: 5,
-        height: 5,
-        borderRadius: 2.5,
-    },
-    dotUnpaid: {
-        backgroundColor: COLORS.expense,
-    },
-    dotPaid: {
-        backgroundColor: COLORS.success,
-    },
-    dotSelected: {
-        backgroundColor: '#FFFFFF',
-    },
-    filterResetRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 12,
-        paddingTop: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#F4F7FB',
-    },
-    filterResetText: {
-        fontFamily: FONTS.medium,
-        fontSize: 12,
-        color: COLORS.secondaryText,
-        flex: 1,
-    },
-    clearFilterBtn: {
-        backgroundColor: `${COLORS.primary}12`,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 8,
-    },
-    clearFilterText: {
-        fontFamily: FONTS.bold,
-        fontSize: 11,
-        color: COLORS.primary,
-    },
-
-    // Events section
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 6,
-    },
-    sectionTitle: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.text },
-    seeAllText: { fontFamily: FONTS.semiBold, fontSize: 13, color: COLORS.primary },
-    emptyCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: SIZES.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#EEF1F7',
-        gap: 6,
-    },
-    emptyTitle: { fontFamily: FONTS.bold, fontSize: 15, color: COLORS.text },
-    emptySub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, textAlign: 'center' },
-    eventCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: '#EEF1F7',
-        paddingRight: SIZES.md,
-        gap: 12,
-    },
-    eventBar: { width: 4.5, alignSelf: 'stretch', minHeight: 64 },
-    eventIconBg: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginVertical: 12 },
-    eventBody: { flex: 1, paddingVertical: 12, gap: 4 },
-    eventTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-    eventTitle: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.text },
-    eventTag: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-    eventTagText: { fontFamily: FONTS.semiBold, fontSize: 10 },
-    eventTimeRow: { flexDirection: 'row', alignItems: 'center' },
-    eventTime: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
-    addEventBtn: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        paddingVertical: 14,
-        borderWidth: 1.5,
-        borderColor: COLORS.primary,
-        borderStyle: 'dashed',
-        marginTop: 6,
-    },
-    addEventText: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.primary },
-    payBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.success, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
-    payBtnText: { fontFamily: FONTS.semiBold, fontSize: 12, color: '#FFFFFF' },
-    eventActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
-    deleteActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${COLORS.expense}12`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
-    deleteActionText: { fontFamily: FONTS.semiBold, fontSize: 12, color: COLORS.expense },
+    calendarCard: { margin: SIZES.lg, backgroundColor: '#FFFFFF', borderRadius: 18, padding: SIZES.md, borderWidth: 1, borderColor: '#EEF1F7', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+    monthNav: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
+    navBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: '#F4F7FB', alignItems: 'center', justifyContent: 'center' },
+    monthLabel: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.text },
+    dayHeaders: { flexDirection: 'row', marginBottom: 8 },
+    dayHeaderText: { flex: 1, textAlign: 'center', fontFamily: FONTS.semiBold, fontSize: 11, color: COLORS.secondaryText },
+    grid: { flexDirection: 'row', flexWrap: 'wrap' },
+    cell: { width: '14.28%' as any, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
+    cellSelected: { backgroundColor: COLORS.primary },
+    cellToday: { backgroundColor: `${COLORS.primary}15` },
+    cellText: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.text },
+    cellTextSelected: { color: '#FFFFFF', fontFamily: FONTS.bold },
+    planDot: { width: 4, height: 4, borderRadius: 2, marginTop: 2 },
+    section: { paddingHorizontal: SIZES.lg, marginBottom: 20 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+    sectionTitle: { fontFamily: FONTS.semiBold, fontSize: 16, color: COLORS.text },
+    smallAddBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 1, borderColor: `${COLORS.primary}30`, backgroundColor: `${COLORS.primary}08` },
+    smallAddText: { fontFamily: FONTS.semiBold, fontSize: 12, color: COLORS.primary },
+    emptyDay: { alignItems: 'center', paddingVertical: 24, gap: 6 },
+    emptyDayText: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
+    emptyDaySub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
+    planItem: { flexDirection: 'row', alignItems: 'flex-start', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#EEF1F7', marginBottom: 8, gap: 10 },
+    planDone: { opacity: 0.6 },
+    planOverdue: { borderColor: '#FCA5A5', backgroundColor: '#FFF5F5' },
+    checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: '#D1D5DB', alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+    checkboxDone: { backgroundColor: COLORS.success, borderColor: COLORS.success },
+    planNote: { fontFamily: FONTS.medium, fontSize: 14, color: COLORS.text, flex: 1 },
+    planNoteStrike: { textDecorationLine: 'line-through', color: COLORS.secondaryText },
+    overdueLabel: { fontFamily: FONTS.semiBold, fontSize: 11, color: COLORS.expense, marginTop: 4 },
+    upcomingItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: '#EEF1F7', marginBottom: 8, gap: 12 },
+    upcomingDateBadge: { width: 42, height: 42, borderRadius: 10, backgroundColor: `${COLORS.primary}12`, alignItems: 'center', justifyContent: 'center' },
+    upcomingDateText: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.primary },
+    upcomingMonthText: { fontFamily: FONTS.regular, fontSize: 10, color: COLORS.secondaryText },
+    upcomingNote: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.text, flex: 1 },
+    // Modal
+    overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+    modalCard: { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: SIZES.lg, gap: 12, paddingBottom: 40 },
+    modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    modalTitle: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.text },
+    modalLabel: { fontFamily: FONTS.semiBold, fontSize: 13, color: COLORS.text },
+    modalInput: { backgroundColor: '#F9FAFB', borderRadius: 14, borderWidth: 1, borderColor: '#EEF1F7', paddingHorizontal: 14, paddingVertical: 12, fontFamily: FONTS.medium, fontSize: 14, color: COLORS.text },
+    saveBtn: { backgroundColor: COLORS.primary, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+    saveBtnText: { fontFamily: FONTS.bold, fontSize: 16, color: '#FFFFFF' },
 });

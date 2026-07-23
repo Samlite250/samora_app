@@ -25,14 +25,14 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
     const { isBiometricEnabled } = useAuthStore();
     const { fetchLiveRates } = useCurrencyStore();
-    const { checkUpcomingBills } = useAppDataStore();
+    const { checkUpcomingBills, checkGoalProgress, checkPlanReminders } = useAppDataStore();
     const [isUnlocked, setIsUnlocked] = useState(false);
 
-    // Fetch live currency exchange rates silently on startup
-    // And trigger automated check for upcoming bills
     useEffect(() => {
         fetchLiveRates();
         checkUpcomingBills();
+        checkGoalProgress();
+        checkPlanReminders();
     }, []);
 
     const [fontsLoaded] = useFonts({

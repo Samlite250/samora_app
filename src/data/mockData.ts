@@ -50,6 +50,13 @@ export interface GoalRecord {
     color: string;
 }
 
+export interface PlanRecord {
+    id: string;
+    date: string; // YYYY-MM-DD
+    note: string;
+    completed: boolean;
+}
+
 // ─── 5 WALLETS ───
 export const INITIAL_WALLETS: WalletRecord[] = [
     { id: 'w1', name: 'MTN Mobile Money', type: 'Mobile Money', balance: 850000, color: '#F59E0B', icon: 'phone-portrait-outline' },
@@ -93,4 +100,10 @@ export const INITIAL_GOALS: GoalRecord[] = [
     { id: 'g3', title: 'MacBook Pro M3 Upgrade', target_amount: 2800000, current_amount: 1950000, deadline: '2026-10-15', category: 'Gadgets', icon: 'laptop-outline', color: '#8B5CF6' },
     { id: 'g4', title: 'Annual Family Vacation', target_amount: 2000000, current_amount: 1400000, deadline: '2026-11-20', category: 'Travel', icon: 'airplane-outline', color: '#F59E0B' },
     { id: 'g5', title: 'Stock Investment Portfolio', target_amount: 5000000, current_amount: 2300000, deadline: '2027-03-31', category: 'Investment', icon: 'trending-up-outline', color: '#EC4899' },
+];
+
+// ─── PLANNED NOTES ───
+export const INITIAL_PLANS: PlanRecord[] = [
+    { id: 'p1', date: new Date(Date.now() + 86400000).toISOString().slice(0, 10), note: 'Pay taxes and audit docs.', completed: false },
+    { id: 'p2', date: new Date().toISOString().slice(0, 10), note: 'Buy groceries for the week.', completed: false },
 ];
