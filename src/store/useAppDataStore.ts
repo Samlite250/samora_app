@@ -25,6 +25,8 @@ interface AppDataState {
     goals: GoalRecord[];
     plans: PlanRecord[];
     healthScore: number;
+    // Base wallet balances (before any transactions) - used for reactive recompute
+    baseWalletBalances: Record<string, number>;
 
     // Computed / Automation
     getHealthScore: () => number;
@@ -63,6 +65,8 @@ export const useAppDataStore = create<AppDataState>()(
             goals: INITIAL_GOALS,
             plans: INITIAL_PLANS,
             healthScore: 85,
+            // Store the "seed" balances for each wallet (independent of transactions)
+            baseWalletBalances: Object.fromEntries(INITIAL_WALLETS.map(w => [w.id, w.balance])),
 
             getHealthScore: () => {
                 const { wallets, bills, budgets } = get();
@@ -119,54 +123,141 @@ export const useAppDataStore = create<AppDataState>()(
                     amount: newTx.amount,
                     category: newTx.category,
                     wallet_id: newTx.wallet_id || 'w1',
-                    wallet_name: newTx.wallet_name || 'Bank of Kigali',
+                    wallet_name: newTx.wallet_name || 'Main Wallet',
                     date: newTx.date || new Date().toISOString().split('T')[0],
                     notes: newTx.notes,
                 };
 
                 const updatedTxs = [txItem, ...get().transactions];
-                const updatedWallets = get().wallets.map((w) => {
-                    if (w.name === txItem.wallet_name || w.id === txItem.wallet_id) {
-                        const change = txItem.type === 'income' ? txItem.amount : txItem.type === 'expense' ? -txItem.amount : 0;
-                        return { ...w, balance: Math.max(0, w.balance + change) };
+                const { baseWalletBalances, wallets, budgets } = get();
+
+                // Recompute wallet balances from scratch (consistent with delete/edit)
+                const walletBalanceMap: Record<string, number> = { ...baseWalletBalances };
+                updatedTxs.forEach(tx => {
+                    const wid = tx.wallet_id;
+                    if (walletBalanceMap[wid] !== undefined) {
+                        if (tx.type === 'income') walletBalanceMap[wid] += tx.amount;
+                        else if (tx.type === 'expense') walletBalanceMap[wid] -= tx.amount;
                     }
-                    return w;
                 });
 
-                const updatedBudgets = get().budgets.map((b) => {
+                const updatedWallets = wallets.map(w => ({
+                    ...w,
+                    balance: Math.max(0, walletBalanceMap[w.id] ?? w.balance),
+                }));
+
+                // Recompute budget spending from scratch
+                const budgetSpendMap: Record<string, number> = {};
+                updatedTxs.forEach(tx => {
+                    if (tx.type === 'expense') {
+                        budgets.forEach(b => {
+                            if (b.category.toLowerCase().includes(tx.category.toLowerCase())) {
+                                budgetSpendMap[b.id] = (budgetSpendMap[b.id] || 0) + tx.amount;
+                            }
+                        });
+                    }
+                });
+
+                const updatedBudgets = budgets.map(b => {
+                    const newSpent = budgetSpendMap[b.id] ?? b.spent;
+                    const newPct = Math.min(100, Math.round((newSpent / b.total) * 100));
+
+                    // Budget Alert Notifications
                     if (txItem.type === 'expense' && b.category.toLowerCase().includes(txItem.category.toLowerCase())) {
-                        const newSpent = b.spent + txItem.amount;
-                        const newPct = Math.min(100, Math.round((newSpent / b.total) * 100));
-
-                        // Budget Alert Notifications
                         if (newPct >= 100 && b.pct < 100) {
-                            Alert.alert('🚨 Budget Exceeded!', `You have exceeded your ${b.category} budget of ${b.total} FRw.`);
+                            Alert.alert('🚨 Budget Exceeded!', `You've exceeded your ${b.category} budget!`);
                         } else if (newPct >= 80 && b.pct < 80) {
-                            Alert.alert('⚠️ Budget Warning', `You have used ${newPct}% of your ${b.category} budget.`);
+                            Alert.alert('⚠️ Budget Warning', `You've used ${newPct}% of your ${b.category} budget.`);
                         }
-
-                        return { ...b, spent: newSpent, pct: newPct };
                     }
-                    return b;
+
+                    return { ...b, spent: newSpent, pct: newPct };
                 });
 
-                set({
-                    transactions: updatedTxs,
-                    wallets: updatedWallets,
-                    budgets: updatedBudgets,
-                });
+                set({ transactions: updatedTxs, wallets: updatedWallets, budgets: updatedBudgets });
             },
 
             deleteTransaction: async (id: string) => {
-                set({ transactions: get().transactions.filter((tx) => tx.id !== id) });
+                const txToDelete = get().transactions.find(tx => tx.id === id);
+                if (!txToDelete) return;
+
+                const remainingTxs = get().transactions.filter(tx => tx.id !== id);
+                const { baseWalletBalances, wallets, budgets } = get();
+
+                // Recompute all wallet balances from scratch
+                const walletBalanceMap: Record<string, number> = { ...baseWalletBalances };
+                remainingTxs.forEach(tx => {
+                    const wid = tx.wallet_id;
+                    if (walletBalanceMap[wid] !== undefined) {
+                        if (tx.type === 'income') walletBalanceMap[wid] += tx.amount;
+                        else if (tx.type === 'expense') walletBalanceMap[wid] -= tx.amount;
+                    }
+                });
+
+                const updatedWallets = wallets.map(w => ({
+                    ...w,
+                    balance: Math.max(0, walletBalanceMap[w.id] ?? w.balance),
+                }));
+
+                // Recompute all budget spending from scratch
+                const budgetSpendMap: Record<string, number> = {};
+                remainingTxs.forEach(tx => {
+                    if (tx.type === 'expense') {
+                        budgets.forEach(b => {
+                            if (b.category.toLowerCase().includes(tx.category.toLowerCase())) {
+                                budgetSpendMap[b.id] = (budgetSpendMap[b.id] || 0) + tx.amount;
+                            }
+                        });
+                    }
+                });
+
+                const updatedBudgets = budgets.map(b => {
+                    const newSpent = budgetSpendMap[b.id] ?? 0;
+                    const newPct = Math.min(100, Math.round((newSpent / b.total) * 100));
+                    return { ...b, spent: newSpent, pct: newPct };
+                });
+
+                set({ transactions: remainingTxs, wallets: updatedWallets, budgets: updatedBudgets });
             },
 
             editTransaction: async (id: string, updated: Partial<TransactionRecord>) => {
-                set({
-                    transactions: get().transactions.map((tx) =>
-                        tx.id === id ? { ...tx, ...updated } : tx
-                    ),
+                const updatedTxs = get().transactions.map(tx => tx.id === id ? { ...tx, ...updated } : tx);
+                const { baseWalletBalances, wallets, budgets } = get();
+
+                // Recompute wallet balances with the edited list
+                const walletBalanceMap: Record<string, number> = { ...baseWalletBalances };
+                updatedTxs.forEach(tx => {
+                    const wid = tx.wallet_id;
+                    if (walletBalanceMap[wid] !== undefined) {
+                        if (tx.type === 'income') walletBalanceMap[wid] += tx.amount;
+                        else if (tx.type === 'expense') walletBalanceMap[wid] -= tx.amount;
+                    }
                 });
+
+                const updatedWallets = wallets.map(w => ({
+                    ...w,
+                    balance: Math.max(0, walletBalanceMap[w.id] ?? w.balance),
+                }));
+
+                // Recompute budget spending with the edited list
+                const budgetSpendMap: Record<string, number> = {};
+                updatedTxs.forEach(tx => {
+                    if (tx.type === 'expense') {
+                        budgets.forEach(b => {
+                            if (b.category.toLowerCase().includes(tx.category.toLowerCase())) {
+                                budgetSpendMap[b.id] = (budgetSpendMap[b.id] || 0) + tx.amount;
+                            }
+                        });
+                    }
+                });
+
+                const updatedBudgets = budgets.map(b => {
+                    const newSpent = budgetSpendMap[b.id] ?? 0;
+                    const newPct = Math.min(100, Math.round((newSpent / b.total) * 100));
+                    return { ...b, spent: newSpent, pct: newPct };
+                });
+
+                set({ transactions: updatedTxs, wallets: updatedWallets, budgets: updatedBudgets });
             },
 
             addBill: async (newBill) => {
