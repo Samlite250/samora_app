@@ -61,6 +61,86 @@ export const ScanReceiptModal: React.FC<ScanReceiptModalProps> = ({ visible, onC
         }
     }, [visible, wallets]);
 
+    // ────────────────────────────────────────────────────────
+    // RECEIPT IMAGE VALIDATOR — Canvas pixel analysis engine
+    // Returns a confidence score 0–100 (>=50 = likely a receipt)
+    // ────────────────────────────────────────────────────────
+    const validateReceiptImage = (imageSrc: string): Promise<{ valid: boolean; reason: string; score: number }> => {
+        return new Promise((resolve) => {
+            if (Platform.OS !== 'web' || typeof document === 'undefined') {
+                // Native: best-effort approve (Tesseract will validate later)
+                resolve({ valid: true, reason: 'native', score: 70 });
+                return;
+            }
+
+            const img = new (window as any).Image();
+            img.onload = () => {
+                try {
+                    const SAMPLE_W = 120;
+                    const SAMPLE_H = 200;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = SAMPLE_W;
+                    canvas.height = SAMPLE_H;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) { resolve({ valid: true, reason: 'fallback', score: 60 }); return; }
+
+                    ctx.drawImage(img, 0, 0, SAMPLE_W, SAMPLE_H);
+                    const { data } = ctx.getImageData(0, 0, SAMPLE_W, SAMPLE_H);
+
+                    let totalPixels = 0;
+                    let lightPixels = 0;   // bright/white pixels (paper background)
+                    let darkPixels = 0;    // dark/black pixels (printed text)
+                    let coloredPixels = 0; // high-saturation (non-receipt)
+                    let contrastSum = 0;
+
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i + 1];
+                        const b = data[i + 2];
+
+                        const brightness = (r + g + b) / 3;
+                        // Saturation: difference between max & min channel
+                        const maxC = Math.max(r, g, b);
+                        const minC = Math.min(r, g, b);
+                        const saturation = maxC - minC;
+
+                        totalPixels++;
+                        if (brightness > 200) lightPixels++;
+                        if (brightness < 80) darkPixels++;
+                        if (saturation > 60) coloredPixels++;
+                        contrastSum += brightness;
+                    }
+
+                    const lightRatio = lightPixels / totalPixels;     // receipts have lots of white
+                    const darkRatio = darkPixels / totalPixels;       // receipts have printed text lines
+                    const colorRatio = coloredPixels / totalPixels;   // receipts are mostly grayscale
+                    const avgBrightness = contrastSum / totalPixels;  // receipts are bright overall
+
+                    // Score each criterion
+                    let score = 0;
+                    if (lightRatio > 0.35) score += 30;   // mostly white paper background
+                    if (darkRatio > 0.03 && darkRatio < 0.5) score += 25;  // printed text exists (not too much)
+                    if (colorRatio < 0.20) score += 25;   // low color saturation (grayscale-dominant)
+                    if (avgBrightness > 140) score += 20; // overall bright (white paper)
+
+                    let reason = '';
+                    if (score < 50) {
+                        if (colorRatio >= 0.20) reason = 'This looks like a colorful photo, not a receipt. Receipts are typically black-and-white or grayscale.';
+                        else if (lightRatio < 0.20) reason = 'This image is too dark to be a receipt. Please upload a clearly lit receipt scan or photo.';
+                        else if (avgBrightness <= 140) reason = 'The image does not appear to be a printed receipt. Please scan or photograph a paper receipt.';
+                        else reason = 'This does not appear to be a receipt image.';
+                    }
+
+                    resolve({ valid: score >= 50, reason, score });
+                } catch {
+                    resolve({ valid: true, reason: 'analysis_error_fallback', score: 55 });
+                }
+            };
+            img.onerror = () => resolve({ valid: true, reason: 'load_error_fallback', score: 55 });
+            img.src = imageSrc;
+        });
+    };
+
     // Sub-Second Ultra-Fast OCR Scanner Engine (~300ms)
     const runSharpOCR = (imageSrc: string, rawFileName: string) => {
         setScanningState('scanning');
@@ -140,15 +220,53 @@ export const ScanReceiptModal: React.FC<ScanReceiptModalProps> = ({ visible, onC
         });
     };
 
-    // File Upload Handler
+    // File Upload Handler — with receipt image validation gate
     const handlePickImage = (event: any) => {
         const file = event?.target?.files?.[0];
         if (file) {
+            // 1. Quick file-type pre-check
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp'];
+            if (!allowedTypes.includes(file.type)) {
+                triggerToast('Unsupported file type. Please upload a JPG, PNG or WEBP image.', 'error');
+                Alert.alert('Invalid File', 'Please upload a valid image file (JPG, PNG or WEBP).');
+                return;
+            }
+
+            // 2. Size sanity check (reject files > 20MB)
+            if (file.size > 20 * 1024 * 1024) {
+                triggerToast('File too large. Please upload an image under 20MB.', 'error');
+                Alert.alert('File Too Large', 'Please upload a receipt image smaller than 20MB.');
+                return;
+            }
+
             const reader = new FileReader();
-            reader.onload = (e) => {
+            reader.onload = async (e) => {
                 const uri = e.target?.result as string;
+
+                // 3. Show preview immediately so user can see what they picked
                 setImageUri(uri);
                 setFileName(file.name);
+                triggerToast('Validating image... checking if this is a receipt.', 'info');
+
+                // 4. Run canvas pixel analysis receipt validation
+                const { valid, reason, score } = await validateReceiptImage(uri);
+
+                if (!valid) {
+                    // Reset the image preview and show clear rejection message
+                    setImageUri(null);
+                    setFileName('');
+                    triggerToast(`❌ Not a receipt image (score: ${score}/100). ${reason}`, 'error');
+                    Alert.alert(
+                        '⚠️ Invalid Image',
+                        `This does not appear to be a receipt.\n\n${reason}\n\nPlease upload a clear photo or scan of a paper receipt, invoice, or e-bill.`,
+                        [{ text: 'Try Again', style: 'default' }]
+                    );
+                    // Reset file input so same file can be re-attempted
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                    return;
+                }
+
+                // 5. Valid receipt — proceed with OCR
                 runSharpOCR(uri, file.name);
             };
             reader.readAsDataURL(file);
