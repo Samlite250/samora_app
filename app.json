@@ -59,6 +59,11 @@
       ],
       "expo-notifications",
       "expo-video"
-    ]
+    ],
+    "extra": {
+      "router": {
+        "root": "./app"
+      }
+    }
   }
 }
