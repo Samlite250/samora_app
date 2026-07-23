@@ -1,25 +1,32 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
-
-const METRICS = [
-    { label: 'Savings Rate', value: '82', max: 100, color: COLORS.success, icon: 'trending-up-outline' },
-    { label: 'Debt Ratio', value: '70', max: 100, color: COLORS.warning, icon: 'card-outline' },
-    { label: 'Budget Discipline', value: '85', max: 100, color: COLORS.primary, icon: 'checkmark-circle-outline' },
-    { label: 'Bill Payments', value: '92', max: 100, color: COLORS.success, icon: 'receipt-outline' },
-    { label: 'Emergency Fund', value: '65', max: 100, color: '#8B5CF6', icon: 'shield-outline' },
-];
+import { useAppDataStore } from '../../src/store/useAppDataStore';
 
 export default function FinancialHealthScreen() {
+    const router = useRouter();
+    const { getHealthScore, getHealthMetrics } = useAppDataStore();
+    const score = getHealthScore();
+    const metrics = getHealthMetrics();
+
+    const getScoreBadge = (s: number) => {
+        if (s >= 80) return { label: 'Great Shape', color: COLORS.success, bg: 'rgba(22,163,74,0.12)', icon: 'checkmark-circle' };
+        if (s >= 50) return { label: 'Fair / Monitor', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', icon: 'alert-circle' };
+        return { label: 'Attention Needed', color: COLORS.expense, bg: 'rgba(239,68,68,0.12)', icon: 'warning' };
+    };
+
+    const badge = getScoreBadge(score);
+
     return (
         <ScreenBackground>
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Financial Health</Text>
-                    <TouchableOpacity>
-                        <Ionicons name="information-circle-outline" size={22} color={COLORS.secondaryText} />
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <Ionicons name="close-circle-outline" size={24} color={COLORS.secondaryText} />
                     </TouchableOpacity>
                 </View>
 
@@ -27,23 +34,25 @@ export default function FinancialHealthScreen() {
 
                     {/* Score Circle */}
                     <View style={styles.scoreCard}>
-                        <View style={styles.scoreCircle}>
+                        <View style={[styles.scoreCircle, { borderColor: badge.color }]}>
                             <View style={styles.scoreInner}>
-                                <Text style={styles.scoreNum}>78</Text>
+                                <Text style={styles.scoreNum}>{score}</Text>
                                 <Text style={styles.scoreDenom}>/100</Text>
                             </View>
                         </View>
-                        <View style={[styles.scoreBadge, { backgroundColor: 'rgba(22,163,74,0.12)' }]}>
-                            <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-                            <Text style={[styles.scoreBadgeText, { color: COLORS.success }]}>Good</Text>
+                        <View style={[styles.scoreBadge, { backgroundColor: badge.bg }]}>
+                            <Ionicons name={badge.icon as any} size={16} color={badge.color} />
+                            <Text style={[styles.scoreBadgeText, { color: badge.color }]}>{badge.label}</Text>
                         </View>
-                        <Text style={styles.scoreSubtitle}>You are on the right track!</Text>
+                        <Text style={styles.scoreSubtitle}>
+                            {score >= 80 ? "You're in great shape! Keep saving." : score >= 50 ? "Your budget is tight. Monitor expenses." : "Action needed! High bills or expenses."}
+                        </Text>
                     </View>
 
                     {/* Metrics */}
                     <View style={styles.metricsCard}>
-                        {METRICS.map((m, i) => (
-                            <View key={i} style={[styles.metricRow, i < METRICS.length - 1 && styles.metricBorder]}>
+                        {metrics.map((m, i) => (
+                            <View key={i} style={[styles.metricRow, i < metrics.length - 1 && styles.metricBorder]}>
                                 <Ionicons name={m.icon as any} size={18} color={m.color} />
                                 <View style={styles.metricBody}>
                                     <View style={styles.metricTitleRow}>
@@ -58,8 +67,8 @@ export default function FinancialHealthScreen() {
                         ))}
                     </View>
 
-                    <TouchableOpacity style={styles.detailBtn}>
-                        <Text style={styles.detailText}>View Detailed Report →</Text>
+                    <TouchableOpacity style={styles.detailBtn} onPress={() => router.push('/(tabs)/analytics')}>
+                        <Text style={styles.detailText}>View Analytics & Export PDF →</Text>
                     </TouchableOpacity>
 
                 </ScrollView>

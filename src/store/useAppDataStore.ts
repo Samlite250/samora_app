@@ -17,6 +17,14 @@ import {
     WalletRecord,
 } from '../data/mockData';
 
+export interface HealthMetric {
+    label: string;
+    value: number;
+    max: number;
+    color: string;
+    icon: string;
+}
+
 interface AppDataState {
     wallets: WalletRecord[];
     transactions: TransactionRecord[];
@@ -30,6 +38,7 @@ interface AppDataState {
 
     // Computed / Automation
     getHealthScore: () => number;
+    getHealthMetrics: () => HealthMetric[];
     checkUpcomingBills: () => void;
     checkGoalProgress: () => void;
     checkPlanReminders: () => void;
@@ -68,26 +77,62 @@ export const useAppDataStore = create<AppDataState>()(
             // Store the "seed" balances for each wallet (independent of transactions)
             baseWalletBalances: Object.fromEntries(INITIAL_WALLETS.map(w => [w.id, w.balance])),
 
-            getHealthScore: () => {
-                const { wallets, bills, budgets } = get();
+            getHealthMetrics: () => {
+                const { wallets, bills, budgets, transactions } = get();
                 const totalBalance = wallets.reduce((sum, w) => sum + (parseFloat(String(w.balance)) || 0), 0);
-                const unpaidBills = bills.filter(b => !b.is_paid).reduce((sum, b) => sum + (parseFloat(String(b.amount)) || 0), 0);
+                const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (parseFloat(String(t.amount)) || 0), 0);
+                const totalExpenses = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (parseFloat(String(t.amount)) || 0), 0);
 
-                // Simplified health algorithm
-                let score = 100;
-
-                // Deduct if unpaid bills >> balance
-                if (unpaidBills > totalBalance) {
-                    score -= 40;
-                } else if (unpaidBills > totalBalance * 0.5) {
-                    score -= 20;
+                // 1. Savings Rate (Target: >= 20% savings)
+                let savingsRateVal = 50;
+                if (totalIncome > 0) {
+                    const rate = ((totalIncome - totalExpenses) / totalIncome) * 100;
+                    savingsRateVal = Math.max(0, Math.min(100, Math.round(rate)));
                 }
 
-                // Deduct if budgets are mostly exhausted
-                const exhaustedBudgets = budgets.filter(b => b.pct >= 80).length;
-                score -= (exhaustedBudgets * 5); // 5 points per exhausted budget
+                // 2. Budget Discipline (Target: Low average spending vs total budget)
+                let budgetDisciplineVal = 100;
+                if (budgets.length > 0) {
+                    const avgPct = budgets.reduce((sum, b) => sum + (b.pct || 0), 0) / budgets.length;
+                    budgetDisciplineVal = Math.max(0, Math.min(100, Math.round(100 - (avgPct * 0.8))));
+                }
 
-                return Math.max(0, Math.min(100, score));
+                // 3. Bill Payment Ratio (Target: 100% paid)
+                let billPaymentVal = 100;
+                if (bills.length > 0) {
+                    const paidCount = bills.filter(b => b.is_paid).length;
+                    billPaymentVal = Math.round((paidCount / bills.length) * 100);
+                }
+
+                // 4. Debt / Liability Ratio
+                const unpaidBills = bills.filter(b => !b.is_paid).reduce((sum, b) => sum + (parseFloat(String(b.amount)) || 0), 0);
+                let debtRatioVal = 100;
+                if (totalBalance > 0 && unpaidBills > 0) {
+                    debtRatioVal = Math.max(0, Math.min(100, Math.round(100 - ((unpaidBills / totalBalance) * 100))));
+                }
+
+                // 5. Emergency Coverage
+                let emergencyVal = 50;
+                if (totalExpenses > 0) {
+                    const monthsCovered = totalBalance / totalExpenses;
+                    emergencyVal = Math.max(0, Math.min(100, Math.round((monthsCovered / 3) * 100)));
+                } else if (totalBalance > 0) {
+                    emergencyVal = 100;
+                }
+
+                return [
+                    { label: 'Savings Rate', value: savingsRateVal, max: 100, color: savingsRateVal >= 50 ? '#16A34A' : '#F59E0B', icon: 'trending-up-outline' },
+                    { label: 'Debt & Bills Ratio', value: debtRatioVal, max: 100, color: debtRatioVal >= 70 ? '#4285F4' : '#EF4444', icon: 'card-outline' },
+                    { label: 'Budget Discipline', value: budgetDisciplineVal, max: 100, color: budgetDisciplineVal >= 70 ? '#4285F4' : '#F59E0B', icon: 'checkmark-circle-outline' },
+                    { label: 'Bill Payments', value: billPaymentVal, max: 100, color: billPaymentVal >= 80 ? '#16A34A' : '#EF4444', icon: 'receipt-outline' },
+                    { label: 'Emergency Reserve', value: emergencyVal, max: 100, color: '#8B5CF6', icon: 'shield-outline' },
+                ];
+            },
+
+            getHealthScore: () => {
+                const metrics = get().getHealthMetrics();
+                const total = metrics.reduce((sum, m) => sum + m.value, 0);
+                return Math.round(total / metrics.length);
             },
 
             checkUpcomingBills: () => {
