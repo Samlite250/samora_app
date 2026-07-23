@@ -50,15 +50,15 @@ export const SIZES = {
  * Mono/numbers: DM Mono  — tabular, ensures aligned financial figures
  */
 export const FONTS = {
-    // DM Sans – all UI text, labels, headings
+    // DM Sans – clean, compact, professional financial typography
     regular: 'DMSans-Regular',
     medium: 'DMSans-Medium',
     semiBold: 'DMSans-SemiBold',
     bold: 'DMSans-Bold',
 
-    // DM Mono – currency amounts, account numbers, stats
-    mono: 'DMMono-Regular',
-    monoMedium: 'DMMono-Medium',
+    // Financial numbers typography (tight & crisp sans-serif)
+    mono: 'DMSans-Bold',
+    monoMedium: 'DMSans-SemiBold',
 };
 
 export const SHADOWS = {
