@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
@@ -21,20 +21,36 @@ const QUICK_ACTIONS: { id: string; label: string; icon: IoniconsName; color: str
 
 const SPARKLINE = [40, 55, 35, 65, 45, 70, 60, 80, 55, 90, 75, 95];
 
+const getGreeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning,';
+    if (h < 17) return 'Good afternoon,';
+    return 'Good evening,';
+};
+
 export default function HomeScreen() {
     const router = useRouter();
     const { currency, formatAmount } = useCurrencyStore();
     const { wallets, transactions, addTransaction } = useAppDataStore();
 
-    // Modals state
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
     const [showQuickAddModal, setShowQuickAddModal] = useState(false);
     const [quickAddType, setQuickAddType] = useState<'income' | 'expense' | 'transfer'>('expense');
     const [showScanModal, setShowScanModal] = useState(false);
     const [showEditActionsModal, setShowEditActionsModal] = useState(false);
+    const [balanceHidden, setBalanceHidden] = useState(false);
 
     const totalBalanceRwf = wallets.reduce((sum: number, w: any) => sum + (parseFloat(w.balance) || 0), 0);
 
+    const { totalIncome, totalExpenses, netCashFlow } = useMemo(() => {
+        let income = 0; let expenses = 0;
+        transactions.forEach((tx: any) => {
+            const a = parseFloat(tx.amount) || 0;
+            if (tx.type === 'income') income += a;
+            else if (tx.type === 'expense') expenses += a;
+        });
+        return { totalIncome: income, totalExpenses: expenses, netCashFlow: income - expenses };
+    }, [transactions]);
 
     const formatDate = (dateStr: string) => {
         const d = new Date(dateStr);
@@ -72,49 +88,93 @@ export default function HomeScreen() {
                 {/* ─── Header ─── */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        <View style={styles.avatarSmall}>
+                        <TouchableOpacity style={styles.avatarSmall} onPress={() => router.push('/(tabs)/profile')}>
                             <Ionicons name="person" size={18} color={COLORS.primary} />
-                        </View>
+                        </TouchableOpacity>
                         <View>
-                            <Text style={styles.greeting}>Good morning,</Text>
+                            <Text style={styles.greeting}>{getGreeting()}</Text>
                             <Text style={styles.name}>Sam 👋</Text>
                         </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {/* Currency selector badge */}
                         <TouchableOpacity style={styles.currencyBadge} onPress={() => setShowCurrencyModal(true)}>
                             <Text style={styles.currencyFlag}>{CURRENCIES[currency].flag}</Text>
                             <Text style={styles.currencyText}>{currency}</Text>
                             <Ionicons name="chevron-down" size={12} color={COLORS.text} />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.notifBtn} onPress={() => Alert.alert('Notifications', 'You have no new unread notifications.')}>
+                        <TouchableOpacity style={styles.notifBtn} onPress={() => Alert.alert('Notifications', 'No new notifications.')}>
                             <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
                             <View style={styles.notifDot} />
                         </TouchableOpacity>
                     </View>
                 </View>
 
-                {/* ─── Balance Card ─── */}
+                {/* ─── Premium Balance Card ─── */}
                 <View style={styles.balanceCard}>
-                    <View style={styles.balanceTopRow}>
-                        <Text style={styles.balanceLabel}>Total Balance ({currency}) ✦</Text>
-                        <Ionicons name="eye-outline" size={18} color="rgba(255,255,255,0.7)" />
-                    </View>
-                    <Text style={styles.balanceAmount}>{formatAmount(totalBalanceRwf)}</Text>
+                    {/* Decorative orbs */}
+                    <View style={styles.orbTopRight} />
+                    <View style={styles.orbBottomLeft} />
 
-                    <View style={styles.balanceChangeRow}>
-                        <Ionicons name="trending-up" size={13} color={COLORS.success} />
-                        <Text style={styles.balanceChange}> 12.5% from last month</Text>
+                    {/* Top row */}
+                    <View style={styles.balanceTopRow}>
+                        <View style={styles.balanceLabelRow}>
+                            <View style={styles.cardDot} />
+                            <Text style={styles.balanceLabel}>Total Balance · {wallets.length} wallets</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setBalanceHidden(v => !v)} style={styles.eyeBtn}>
+                            <Ionicons name={balanceHidden ? 'eye-off-outline' : 'eye-outline'} size={18} color="rgba(255,255,255,0.8)" />
+                        </TouchableOpacity>
                     </View>
+
+                    {/* Balance amount */}
+                    <Text style={styles.balanceAmount}>
+                        {balanceHidden ? '••••••' : formatAmount(totalBalanceRwf)}
+                    </Text>
+
+                    {/* Change badge */}
+                    <View style={styles.balanceChangeRow}>
+                        <Ionicons name={netCashFlow >= 0 ? 'trending-up' : 'trending-down'} size={13} color={netCashFlow >= 0 ? '#86efac' : '#fca5a5'} />
+                        <Text style={styles.balanceChange}>
+                            {netCashFlow >= 0 ? '+' : ''}{formatAmount(netCashFlow)} net this period
+                        </Text>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={styles.cardDivider} />
+
+                    {/* Mini income/expense row inside card */}
+                    <View style={styles.cardStatsRow}>
+                        <View style={styles.cardStatItem}>
+                            <View style={styles.cardStatIconIn}>
+                                <Ionicons name="arrow-down" size={12} color="#86efac" />
+                            </View>
+                            <View>
+                                <Text style={styles.cardStatLabel}>Income</Text>
+                                <Text style={styles.cardStatVal}>{balanceHidden ? '•••' : formatAmount(totalIncome)}</Text>
+                            </View>
+                        </View>
+                        <View style={styles.cardStatDivider} />
+                        <View style={styles.cardStatItem}>
+                            <View style={styles.cardStatIconOut}>
+                                <Ionicons name="arrow-up" size={12} color="#fca5a5" />
+                            </View>
+                            <View>
+                                <Text style={styles.cardStatLabel}>Expenses</Text>
+                                <Text style={styles.cardStatVal}>{balanceHidden ? '•••' : formatAmount(totalExpenses)}</Text>
+                            </View>
+                        </View>
+                    </View>
+
                     {/* Sparkline */}
                     <View style={styles.sparkline}>
                         {SPARKLINE.map((h, i) => (
                             <View
                                 key={i}
-                                style={[
-                                    styles.sparkBar,
-                                    { height: h * 0.55, opacity: i === SPARKLINE.length - 1 ? 1 : 0.4 + (i / SPARKLINE.length) * 0.5 }
-                                ]}
+                                style={[styles.sparkBar, {
+                                    height: h * 0.5,
+                                    opacity: i === SPARKLINE.length - 1 ? 1 : 0.3 + (i / SPARKLINE.length) * 0.6,
+                                    backgroundColor: i === SPARKLINE.length - 1 ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.4)'
+                                }]}
                             />
                         ))}
                     </View>
@@ -127,7 +187,7 @@ export default function HomeScreen() {
                             <Ionicons name="arrow-down-circle" size={16} color={COLORS.success} />
                         </View>
                         <Text style={styles.summaryLabel}>Income</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.success }]}>{formatAmount(2850000)}</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.success }]}>{formatAmount(totalIncome)}</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryItem}>
@@ -135,7 +195,7 @@ export default function HomeScreen() {
                             <Ionicons name="arrow-up-circle" size={16} color={COLORS.expense} />
                         </View>
                         <Text style={styles.summaryLabel}>Expenses</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.expense }]}>{formatAmount(533500)}</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.expense }]}>{formatAmount(totalExpenses)}</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryItem}>
@@ -143,7 +203,7 @@ export default function HomeScreen() {
                             <Ionicons name="analytics" size={16} color={COLORS.primary} />
                         </View>
                         <Text style={styles.summaryLabel}>Cash Flow</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.primary }]}>{formatAmount(2316500)}</Text>
+                        <Text style={[styles.summaryValue, { color: netCashFlow >= 0 ? COLORS.success : COLORS.expense }]}>{formatAmount(Math.abs(netCashFlow))}</Text>
                     </View>
                 </View>
 
@@ -299,18 +359,32 @@ const styles = StyleSheet.create({
     notifBtn: { position: 'relative', width: 40, height: 40, borderRadius: 20, backgroundColor: '#F4F7FB', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EEF1F7' },
     notifDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.expense, borderWidth: 1.5, borderColor: '#FFFFFF' },
 
-    balanceCard: { marginHorizontal: SIZES.lg, borderRadius: 24, backgroundColor: COLORS.primary, padding: SIZES.xl, marginBottom: SIZES.md, overflow: 'hidden', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 },
-    balanceTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    balanceLabel: { color: 'rgba(255,255,255,0.75)', fontFamily: FONTS.medium, fontSize: 13, letterSpacing: 0.5 },
-    balanceAmount: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 42, letterSpacing: -1.5, marginBottom: 8 },
-    balanceChangeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginBottom: 16 },
-    balanceChange: { color: '#FFFFFF', fontFamily: FONTS.medium, fontSize: 12 },
-    sparkline: { flexDirection: 'row', alignItems: 'flex-end', height: 44, gap: 3, marginTop: 4 },
-    sparkBar: { flex: 1, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.35)', minHeight: 4 },
+    /* ─── Premium Balance Card ─── */
+    balanceCard: { marginHorizontal: SIZES.lg, borderRadius: 28, backgroundColor: '#1A56DB', padding: SIZES.xl, paddingBottom: 16, marginBottom: SIZES.md, overflow: 'hidden', shadowColor: '#1A56DB', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.35, shadowRadius: 24, elevation: 14 },
+    orbTopRight: { position: 'absolute', top: -50, right: -50, width: 160, height: 160, borderRadius: 80, backgroundColor: 'rgba(255,255,255,0.06)' },
+    orbBottomLeft: { position: 'absolute', bottom: -60, left: -40, width: 180, height: 180, borderRadius: 90, backgroundColor: 'rgba(255,255,255,0.05)' },
+    balanceTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+    balanceLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    cardDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#86efac' },
+    balanceLabel: { color: 'rgba(255,255,255,0.72)', fontFamily: FONTS.medium, fontSize: 12, letterSpacing: 0.4 },
+    eyeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+    balanceAmount: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 40, letterSpacing: -1.5, marginBottom: 10 },
+    balanceChangeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.14)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginBottom: 14, gap: 4 },
+    balanceChange: { color: 'rgba(255,255,255,0.95)', fontFamily: FONTS.medium, fontSize: 12 },
+    cardDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 14 },
+    cardStatsRow: { flexDirection: 'row', alignItems: 'center', gap: 0, marginBottom: 14 },
+    cardStatItem: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    cardStatDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.18)', marginHorizontal: 12 },
+    cardStatIconIn: { width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(134,239,172,0.18)', alignItems: 'center', justifyContent: 'center' },
+    cardStatIconOut: { width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(252,165,165,0.18)', alignItems: 'center', justifyContent: 'center' },
+    cardStatLabel: { fontFamily: FONTS.regular, fontSize: 11, color: 'rgba(255,255,255,0.65)' },
+    cardStatVal: { fontFamily: FONTS.bold, fontSize: 14, color: '#FFFFFF' },
+    sparkline: { flexDirection: 'row', alignItems: 'flex-end', height: 38, gap: 3 },
+    sparkBar: { flex: 1, borderRadius: 3, minHeight: 4 },
 
-    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFFFFF', marginHorizontal: SIZES.lg, padding: SIZES.lg, borderRadius: 18, marginBottom: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7' },
-    summaryItem: { alignItems: 'center', flex: 1, gap: 4 },
-    summaryIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+    summaryRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFFFFF', marginHorizontal: SIZES.lg, padding: SIZES.lg, borderRadius: 20, marginBottom: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 },
+    summaryItem: { alignItems: 'center', flex: 1, gap: 5 },
+    summaryIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     summaryDivider: { width: 1, backgroundColor: '#EEF1F7' },
     summaryLabel: { fontFamily: FONTS.medium, color: COLORS.secondaryText, fontSize: 11 },
     summaryValue: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.text },
