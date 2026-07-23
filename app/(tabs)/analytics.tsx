@@ -1,21 +1,68 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
+import { useAppDataStore } from '../../src/store/useAppDataStore';
+import { useCurrencyStore } from '../../src/store/useCurrencyStore';
 
-// Spending donut segments (approximation using bars)
-const SPENDING_CATEGORIES = [
-    { label: 'Food & Dining', percent: 30, color: '#4285F4', amount: '$972.00' },
-    { label: 'Transport', percent: 25, color: '#EA4335', amount: '$810.00' },
-    { label: 'Shopping', percent: 18, color: '#FBBC04', amount: '$583.00' },
-    { label: 'Bills & Utilities', percent: 13, color: '#34A853', amount: '$421.00' },
-    { label: 'Entertainment', percent: 10, color: '#FF6D00', amount: '$324.00' },
-    { label: 'Others', percent: 7, color: '#9C27B0', amount: '$227.50' },
-];
-
-const CASHFLOW_POINTS = [38, 42, 30, 50, 45, 62, 55, 70, 65, 75, 68, 85];
+const CHART_COLORS = ['#4285F4', '#EA4335', '#FBBC04', '#34A853', '#FF6D00', '#9C27B0'];
 
 export default function AnalyticsScreen() {
+    const { transactions } = useAppDataStore();
+    const { formatAmount } = useCurrencyStore();
+
+    // Compute live totals from real transactions
+    const { totalIncome, totalExpenses, netCashFlow, spendingByCategory } = useMemo(() => {
+        let income = 0;
+        let expenses = 0;
+        const catMap: Record<string, number> = {};
+
+        transactions.forEach((tx: any) => {
+            const amt = parseFloat(tx.amount) || 0;
+            if (tx.type === 'income') income += amt;
+            else if (tx.type === 'expense') {
+                expenses += amt;
+                const cat = tx.category || 'Others';
+                catMap[cat] = (catMap[cat] || 0) + amt;
+            }
+        });
+
+        const categories = Object.entries(catMap)
+            .sort((a, b) => b[1] - a[1])
+            .map(([label, amount], i) => ({
+                label,
+                amount,
+                percent: expenses > 0 ? Math.round((amount / expenses) * 100) : 0,
+                color: CHART_COLORS[i % CHART_COLORS.length],
+            }));
+
+        return {
+            totalIncome: income,
+            totalExpenses: expenses,
+            netCashFlow: income - expenses,
+            spendingByCategory: categories,
+        };
+    }, [transactions]);
+
+    // Build mini bar-chart heights from last 12 days of net cashflow
+    const barHeights = useMemo(() => {
+        const map: Record<string, number> = {};
+        transactions.forEach((tx: any) => {
+            const d = tx.date?.slice(0, 10) || '';
+            const amt = parseFloat(tx.amount) || 0;
+            const sign = tx.type === 'income' ? 1 : -1;
+            map[d] = (map[d] || 0) + sign * amt;
+        });
+
+        const days = Object.keys(map).sort().slice(-12);
+        const vals = days.map(d => map[d]);
+        const max = Math.max(...vals.map(Math.abs), 1);
+        return vals.map(v => Math.max(Math.round((Math.abs(v) / max) * 80), 4));
+    }, [transactions]);
+
+    const isPositive = netCashFlow >= 0;
+
     return (
         <ScreenBackground>
             <View style={styles.container}>
@@ -29,72 +76,102 @@ export default function AnalyticsScreen() {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-                    {/* Period Selector */}
-                    <TouchableOpacity style={styles.periodPill}>
-                        <Text style={styles.periodText}>This Month</Text>
-                        <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
-                    </TouchableOpacity>
+                    {/* ─── Summary Cards ─── */}
+                    <View style={styles.summaryRow}>
+                        <View style={[styles.summaryCard, { borderLeftColor: COLORS.success }]}>
+                            <Text style={styles.summaryLabel}>Total Income</Text>
+                            <Text style={[styles.summaryVal, { color: COLORS.success }]}>{formatAmount(totalIncome)}</Text>
+                        </View>
+                        <View style={[styles.summaryCard, { borderLeftColor: COLORS.expense }]}>
+                            <Text style={styles.summaryLabel}>Total Expenses</Text>
+                            <Text style={[styles.summaryVal, { color: COLORS.expense }]}>{formatAmount(totalExpenses)}</Text>
+                        </View>
+                    </View>
 
                     {/* ─── Spending Overview ─── */}
                     <View style={styles.card}>
-                        <Text style={styles.cardTitle}>Spending Overview</Text>
-                        <View style={styles.donutRow}>
-                            {/* Simplified donut chart */}
-                            <View style={styles.donutWrap}>
+                        <Text style={styles.cardTitle}>Spending by Category</Text>
+                        {spendingByCategory.length === 0 ? (
+                            <Text style={styles.emptyNote}>No expense transactions yet. Add expenses to see your spending breakdown.</Text>
+                        ) : (
+                            <>
                                 <View style={styles.donutOuter}>
                                     <View style={styles.donutInner}>
-                                        <Text style={styles.donutAmt}>$3,240.50</Text>
+                                        <Text style={styles.donutAmt}>{formatAmount(totalExpenses)}</Text>
                                         <Text style={styles.donutSub}>Total Expenses</Text>
                                     </View>
                                 </View>
-                                {/* Colored arc segments as colored ring */}
-                                {SPENDING_CATEGORIES.map((c, i) => (
-                                    <View key={i} style={[styles.donutSegment, { backgroundColor: c.color, width: `${c.percent * 0.9}%`, height: 6, borderRadius: 3, marginBottom: 3 }]} />
-                                ))}
-                            </View>
-                            <View style={styles.legendList}>
-                                {SPENDING_CATEGORIES.map((c, i) => (
-                                    <View key={i} style={styles.legendItem}>
-                                        <View style={[styles.legendDot, { backgroundColor: c.color }]} />
-                                        <Text style={styles.legendLabel}>{c.label}</Text>
-                                        <Text style={styles.legendPct}>{c.percent}%</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
+                                <View style={styles.legendList}>
+                                    {spendingByCategory.map((c, i) => (
+                                        <View key={i} style={styles.legendItem}>
+                                            <View style={[styles.legendDot, { backgroundColor: c.color }]} />
+                                            <Text style={styles.legendLabel}>{c.label}</Text>
+                                            <Text style={styles.legendPct}>{c.percent}%</Text>
+                                            <Text style={styles.legendAmt}>{formatAmount(c.amount)}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </>
+                        )}
                     </View>
 
                     {/* ─── Cash Flow ─── */}
                     <View style={styles.card}>
-                        <View style={styles.cashFlowHeader}>
-                            <Text style={styles.cardTitle}>Cash Flow</Text>
-                            <TouchableOpacity style={styles.periodPillSm}>
-                                <Text style={styles.periodTextSm}>This Month</Text>
-                                <Ionicons name="chevron-down" size={12} color={COLORS.secondaryText} />
-                            </TouchableOpacity>
-                        </View>
-
-                        <Text style={styles.cashFlowAmt}>$2,609.50</Text>
+                        <Text style={styles.cardTitle}>Cash Flow</Text>
+                        <Text style={[styles.cashFlowAmt, { color: isPositive ? COLORS.success : COLORS.expense }]}>
+                            {isPositive ? '+' : '-'}{formatAmount(Math.abs(netCashFlow))}
+                        </Text>
                         <Text style={styles.cashFlowSub}>Net Cash Flow</Text>
-                        <View style={styles.cashFlowBadge}>
-                            <Ionicons name="trending-up" size={13} color={COLORS.success} />
-                            <Text style={styles.cashFlowBadgeText}> 12.3% from last month</Text>
+                        <View style={[styles.cashFlowBadge, { backgroundColor: isPositive ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)' }]}>
+                            <Ionicons name={isPositive ? 'trending-up' : 'trending-down'} size={13} color={isPositive ? COLORS.success : COLORS.expense} />
+                            <Text style={[styles.cashFlowBadgeText, { color: isPositive ? COLORS.success : COLORS.expense }]}>
+                                {' '}{isPositive ? 'Positive' : 'Negative'} cash flow this period
+                            </Text>
                         </View>
 
-                        {/* Line chart */}
-                        <View style={styles.lineChart}>
-                            <View style={styles.lineChartBars}>
-                                {CASHFLOW_POINTS.map((h, i) => (
-                                    <View key={i} style={styles.lineChartBarWrap}>
-                                        <View style={[styles.lineChartBar, { height: h, backgroundColor: i === CASHFLOW_POINTS.length - 1 ? COLORS.primary : `${COLORS.primary}40` }]} />
-                                    </View>
-                                ))}
+                        {/* Bar chart from live data */}
+                        {barHeights.length > 0 ? (
+                            <View style={styles.lineChart}>
+                                <View style={styles.lineChartBars}>
+                                    {barHeights.map((h, i) => (
+                                        <View key={i} style={styles.lineChartBarWrap}>
+                                            <View style={[styles.lineChartBar, {
+                                                height: h,
+                                                backgroundColor: i === barHeights.length - 1 ? COLORS.primary : `${COLORS.primary}40`
+                                            }]} />
+                                        </View>
+                                    ))}
+                                </View>
+                                <Text style={styles.chartNote}>Last {barHeights.length} active days</Text>
                             </View>
-                            <View style={styles.lineChartLabels}>
-                                {['1', '7', '14', '21', '28'].map(l => (
-                                    <Text key={l} style={styles.lineChartLabel}>{l}</Text>
-                                ))}
+                        ) : (
+                            <Text style={styles.emptyNote}>No transaction data yet.</Text>
+                        )}
+                    </View>
+
+                    {/* ─── Income vs Expenses ─── */}
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Income vs Expenses</Text>
+                        <View style={styles.compareRow}>
+                            <View style={styles.compareItem}>
+                                <View style={[styles.compareDot, { backgroundColor: COLORS.success }]} />
+                                <Text style={styles.compareLabel}>Income</Text>
+                                <Text style={[styles.compareVal, { color: COLORS.success }]}>{formatAmount(totalIncome)}</Text>
                             </View>
+                            <View style={styles.compareItem}>
+                                <View style={[styles.compareDot, { backgroundColor: COLORS.expense }]} />
+                                <Text style={styles.compareLabel}>Expenses</Text>
+                                <Text style={[styles.compareVal, { color: COLORS.expense }]}>{formatAmount(totalExpenses)}</Text>
+                            </View>
+                        </View>
+                        {/* Ratio bars */}
+                        <View style={styles.ratioBg}>
+                            <View style={[styles.ratioIncome, {
+                                flex: totalIncome > 0 ? totalIncome : 1,
+                            }]} />
+                            <View style={[styles.ratioExpense, {
+                                flex: totalExpenses > 0 ? totalExpenses : 0,
+                            }]} />
                         </View>
                     </View>
 
@@ -109,33 +186,38 @@ const styles = StyleSheet.create({
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerTitle: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
     scroll: { padding: SIZES.lg, paddingBottom: 120, gap: SIZES.lg },
-    periodPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: '#EEF1F7', alignSelf: 'flex-start' },
-    periodText: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.text },
-    card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7' },
-    cardTitle: { fontFamily: FONTS.semiBold, fontSize: 16, color: COLORS.text, marginBottom: 14 },
-    donutRow: { flexDirection: 'row', gap: SIZES.lg },
-    donutWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    donutOuter: { width: 120, height: 120, borderRadius: 60, borderWidth: 18, borderColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+    summaryRow: { flexDirection: 'row', gap: 12 },
+    summaryCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 14, padding: SIZES.md, borderWidth: 1, borderColor: '#EEF1F7', borderLeftWidth: 4, gap: 4 },
+    summaryLabel: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
+    summaryVal: { fontFamily: FONTS.bold, fontSize: 16 },
+    card: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7', gap: 12 },
+    cardTitle: { fontFamily: FONTS.semiBold, fontSize: 16, color: COLORS.text },
+    emptyNote: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.secondaryText, textAlign: 'center', paddingVertical: 16 },
+    donutOuter: { width: 110, height: 110, borderRadius: 55, borderWidth: 18, borderColor: COLORS.primary, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
     donutInner: { alignItems: 'center' },
-    donutAmt: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.text, textAlign: 'center' },
+    donutAmt: { fontFamily: FONTS.bold, fontSize: 11, color: COLORS.text, textAlign: 'center' },
     donutSub: { fontFamily: FONTS.regular, fontSize: 9, color: COLORS.secondaryText, textAlign: 'center' },
-    donutSegment: { alignSelf: 'flex-start' },
-    legendList: { flex: 1, gap: 7, justifyContent: 'center' },
-    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-    legendDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-    legendLabel: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.text, flex: 1 },
-    legendPct: { fontFamily: FONTS.semiBold, fontSize: 11, color: COLORS.secondaryText },
-    cashFlowHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-    periodPillSm: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: '#F4F7FB', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
-    periodTextSm: { fontFamily: FONTS.medium, fontSize: 11, color: COLORS.secondaryText },
-    cashFlowAmt: { fontFamily: FONTS.bold, fontSize: 28, color: COLORS.text, letterSpacing: -0.5 },
-    cashFlowSub: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.secondaryText, marginBottom: 8 },
-    cashFlowBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(22,163,74,0.1)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, marginBottom: 16 },
-    cashFlowBadgeText: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.success },
-    lineChart: { gap: 8 },
+    legendList: { gap: 8 },
+    legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    legendDot: { width: 10, height: 10, borderRadius: 5, flexShrink: 0 },
+    legendLabel: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.text, flex: 1 },
+    legendPct: { fontFamily: FONTS.semiBold, fontSize: 12, color: COLORS.secondaryText, width: 36, textAlign: 'right' },
+    legendAmt: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.text, width: 80, textAlign: 'right' },
+    cashFlowAmt: { fontFamily: FONTS.bold, fontSize: 28, letterSpacing: -0.5 },
+    cashFlowSub: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.secondaryText },
+    cashFlowBadge: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+    cashFlowBadgeText: { fontFamily: FONTS.medium, fontSize: 12 },
+    lineChart: { gap: 6 },
     lineChartBars: { flexDirection: 'row', alignItems: 'flex-end', height: 80, gap: 4 },
     lineChartBarWrap: { flex: 1, justifyContent: 'flex-end' },
     lineChartBar: { borderRadius: 3, minHeight: 4 },
-    lineChartLabels: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 4 },
-    lineChartLabel: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.secondaryText },
+    chartNote: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.secondaryText, textAlign: 'center' },
+    compareRow: { flexDirection: 'row', gap: 12 },
+    compareItem: { flex: 1, gap: 4 },
+    compareDot: { width: 10, height: 10, borderRadius: 5 },
+    compareLabel: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
+    compareVal: { fontFamily: FONTS.bold, fontSize: 15 },
+    ratioBg: { flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: '#EEF1F7' },
+    ratioIncome: { backgroundColor: COLORS.success },
+    ratioExpense: { backgroundColor: COLORS.expense },
 });

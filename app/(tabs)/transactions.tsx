@@ -2,37 +2,53 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
+import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
+
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
+import { useAppDataStore } from '../../src/store/useAppDataStore';
+import { useCurrencyStore } from '../../src/store/useCurrencyStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const FILTERS = ['All', 'Income', 'Expense', 'Transfer'];
 
-const TODAY_TXS = [
-    { title: 'Salary', sub: 'Bank Account', amount: '+$3,850.00', type: 'in', icon: 'briefcase-outline' as IoniconsName },
-    { title: 'Uber', sub: 'Transportation', amount: '-$12.50', type: 'out', icon: 'car-outline' as IoniconsName },
-    { title: 'Grocery Store', sub: 'Food & Dining', amount: '-$46.80', type: 'out', icon: 'cart-outline' as IoniconsName },
-];
+const getTxIcon = (type: string) => {
+    if (type === 'income') return 'briefcase-outline';
+    if (type === 'transfer') return 'swap-horizontal';
+    return 'card-outline';
+};
 
-const YESTERDAY_TXS = [
-    { title: 'Freelance Work', sub: 'Income', amount: '+$250.00', type: 'in', icon: 'code-slash-outline' as IoniconsName },
-    { title: 'Electricity Bill', sub: 'Bills & Utilities', amount: '-$120.00', type: 'out', icon: 'flash-outline' as IoniconsName },
-];
+const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
 
 export default function TransactionsScreen() {
     const [activeFilter, setActiveFilter] = useState('All');
     const [search, setSearch] = useState('');
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    const { formatAmount } = useCurrencyStore();
+    const { transactions: allTransactions } = useAppDataStore();
+
+    const filteredTransactions = allTransactions.filter((tx: any) => {
+        const matchesFilter = activeFilter === 'All' || tx.type.toLowerCase() === activeFilter.toLowerCase();
+        const matchesSearch = tx.title.toLowerCase().includes(search.toLowerCase()) ||
+            (tx.notes && tx.notes.toLowerCase().includes(search.toLowerCase()));
+        return matchesFilter && matchesSearch;
+    });
 
     return (
         <ScreenBackground>
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Transactions</Text>
-                    <TouchableOpacity style={styles.addBtn}>
+                    <Text style={styles.headerTitle}>Transactions ({allTransactions.length})</Text>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => setIsAddModalOpen(true)}>
                         <Ionicons name="add" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
                 </View>
+
 
                 {/* Search Bar */}
                 <View style={styles.searchWrap}>
@@ -55,46 +71,45 @@ export default function TransactionsScreen() {
                     ))}
                 </View>
 
-                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                    {/* Today */}
-                    <Text style={styles.groupLabel}>Today</Text>
-                    {TODAY_TXS.map((tx, i) => (
-                        <TouchableOpacity key={i} style={styles.txItem}>
-                            <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
-                            </View>
-                            <View style={styles.txDetails}>
-                                <Text style={styles.txTitle}>{tx.title}</Text>
-                                <Text style={styles.txSub}>{tx.sub}</Text>
-                            </View>
-                            <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
-                        </TouchableOpacity>
-                    ))}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+                    {filteredTransactions.length === 0 ? (
+                        <Text style={{ textAlign: 'center', marginTop: 30, color: COLORS.secondaryText }}>No transactions found.</Text>
+                    ) : (
+                        filteredTransactions.map((tx: any, idx: number) => {
+                            const isExpense = tx.type === 'expense';
+                            const isIncome = tx.type === 'income';
+                            const color = isIncome ? COLORS.success : isExpense ? COLORS.expense : COLORS.primary;
+                            const prefix = isIncome ? '+' : isExpense ? '-' : '';
+                            const amountRwf = parseFloat(tx.amount) || 0;
 
-                    {/* Yesterday */}
-                    <Text style={styles.groupLabel}>Yesterday</Text>
-                    {YESTERDAY_TXS.map((tx, i) => (
-                        <TouchableOpacity key={i} style={styles.txItem}>
-                            <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
-                            </View>
-                            <View style={styles.txDetails}>
-                                <Text style={styles.txTitle}>{tx.title}</Text>
-                                <Text style={styles.txSub}>{tx.sub}</Text>
-                            </View>
-                            <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
-                        </TouchableOpacity>
-                    ))}
-
-                    <TouchableOpacity style={styles.viewAllBtn}>
-                        <Text style={styles.viewAllText}>View All Transactions</Text>
-                    </TouchableOpacity>
-
+                            return (
+                                <View key={tx.id || idx} style={styles.txItem}>
+                                    <View style={[styles.txIcon, { backgroundColor: color + '18' }]}>
+                                        <Ionicons name={getTxIcon(tx.type)} size={20} color={color} />
+                                    </View>
+                                    <View style={styles.txDetails}>
+                                        <Text style={styles.txTitle}>{tx.title}</Text>
+                                        <Text style={styles.txSub}>{tx.wallet_name || tx.wallets?.name || 'Wallet'} • {formatDate(tx.date)}</Text>
+                                    </View>
+                                    <Text style={[styles.txAmount, { color }]}>
+                                        {prefix}{formatAmount(Math.abs(amountRwf))}
+                                    </Text>
+                                </View>
+                            );
+                        })
+                    )}
                 </ScrollView>
+
+                <QuickAddModal
+                    visible={isAddModalOpen}
+                    onClose={() => setIsAddModalOpen(false)}
+                />
             </View>
         </ScreenBackground>
     );
 }
+
+
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: 'transparent' },

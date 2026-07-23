@@ -4,25 +4,17 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
+import { useAppDataStore } from '../../src/store/useAppDataStore';
+import { useCurrencyStore } from '../../src/store/useCurrencyStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-interface WalletItem {
-    name: string;
-    acc: string;
-    amount: string;
-    color: string;
-    icon: IoniconsName;
-    type: 'positive' | 'negative';
-}
-
-const WALLETS: WalletItem[] = [
-    { name: 'Bank Account', acc: '**** 4567', amount: '$5,650.00', color: COLORS.primary, icon: 'business-outline', type: 'positive' },
-    { name: 'Mobile Money', acc: 'MTN - 1234', amount: '$2,350.00', color: COLORS.warning, icon: 'phone-portrait-outline', type: 'positive' },
-    { name: 'Cash Wallet', acc: 'Cash', amount: '$1,250.00', color: COLORS.success, icon: 'cash-outline', type: 'positive' },
-    { name: 'Credit Card', acc: '**** 7890', amount: '-$1,240.00', color: COLORS.expense, icon: 'card-outline', type: 'negative' },
-    { name: 'Savings Account', acc: '**** 2345', amount: '$4,550.00', color: '#8B5CF6', icon: 'save-outline', type: 'positive' },
-];
+const getWalletIcon = (type: string): IoniconsName => {
+    if (type === 'Mobile Money') return 'phone-portrait-outline';
+    if (type === 'Cash') return 'cash-outline';
+    if (type === 'Credit Card') return 'card-outline';
+    return 'business-outline';
+};
 
 // Bar chart data for Activity Summary (Mon-Sun)
 const ACTIVITY = [
@@ -37,13 +29,15 @@ const ACTIVITY = [
 
 export default function WalletScreen() {
     const router = useRouter();
+    const { formatAmount } = useCurrencyStore();
+    const { wallets } = useAppDataStore();
 
     return (
         <ScreenBackground>
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Wallet</Text>
+                    <Text style={styles.headerTitle}>My Wallets ({wallets.length})</Text>
                     <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/(tabs)/add')}>
                         <Ionicons name="add" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
@@ -53,29 +47,38 @@ export default function WalletScreen() {
 
                     {/* ─── My Wallets ─── */}
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>My Wallets</Text>
+                        <Text style={styles.sectionTitle}>My Wallets ({wallets.length})</Text>
                         <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
                             <Text style={styles.seeAll}>See all</Text>
                         </TouchableOpacity>
                     </View>
 
-                    {WALLETS.map((w, i) => (
-                        <TouchableOpacity key={i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
-                            <View style={[styles.walletIconBg, { backgroundColor: w.color + '18' }]}>
-                                <Ionicons name={w.icon} size={20} color={w.color} />
-                            </View>
-                            <View style={styles.walletDetails}>
-                                <Text style={styles.walletName}>{w.name}</Text>
-                                <Text style={styles.walletAcc}>{w.acc}</Text>
-                            </View>
-                            <View style={styles.walletRight}>
-                                <Text style={[styles.walletAmount, { color: w.type === 'negative' ? COLORS.expense : COLORS.text }]}>
-                                    {w.amount}
-                                </Text>
-                                <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                    {wallets.length === 0 ? (
+                        <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No wallets found.</Text>
+                    ) : (
+
+                        wallets.map((w: any, i: number) => {
+                            const balance = parseFloat(w.balance) || 0;
+                            const isNegative = balance < 0;
+                            return (
+                                <TouchableOpacity key={w.id || i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
+                                    <View style={[styles.walletIconBg, { backgroundColor: (w.color || COLORS.primary) + '18' }]}>
+                                        <Ionicons name={getWalletIcon(w.type)} size={20} color={w.color || COLORS.primary} />
+                                    </View>
+                                    <View style={styles.walletDetails}>
+                                        <Text style={styles.walletName}>{w.name}</Text>
+                                        <Text style={styles.walletAcc}>{w.type}</Text>
+                                    </View>
+                                    <View style={styles.walletRight}>
+                                        <Text style={[styles.walletAmount, { color: isNegative ? COLORS.expense : COLORS.text }]}>
+                                            {isNegative ? '-' : ''}{formatAmount(Math.abs(balance))}
+                                        </Text>
+                                        <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })
+                    )}
 
                     {/* ─── Activity Summary ─── */}
                     <View style={[styles.sectionHeader, { marginTop: SIZES.lg }]}>
@@ -92,13 +95,13 @@ export default function WalletScreen() {
                             <View style={styles.statItem}>
                                 <View style={[styles.statDot, { backgroundColor: COLORS.success }]} />
                                 <Text style={styles.statLabel}>Income</Text>
-                                <Text style={[styles.statValue, { color: COLORS.success }]}>$1,850.00</Text>
+                                <Text style={[styles.statValue, { color: COLORS.success }]}>{formatAmount(2850000)}</Text>
                             </View>
                             <View style={styles.statDivider} />
                             <View style={styles.statItem}>
                                 <View style={[styles.statDot, { backgroundColor: COLORS.expense }]} />
                                 <Text style={styles.statLabel}>Expenses</Text>
-                                <Text style={[styles.statValue, { color: COLORS.expense }]}>$980.50</Text>
+                                <Text style={[styles.statValue, { color: COLORS.expense }]}>{formatAmount(533500)}</Text>
                             </View>
                         </View>
 
@@ -133,6 +136,7 @@ export default function WalletScreen() {
         </ScreenBackground>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: 'transparent' },

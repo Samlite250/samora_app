@@ -1,42 +1,68 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
+import { CurrencySelectorModal } from '../../src/presentation/components/CurrencySelectorModal';
+import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
+import { useAppDataStore } from '../../src/store/useAppDataStore';
+import { CURRENCIES, useCurrencyStore } from '../../src/store/useCurrencyStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
-const QUICK_ACTIONS: { label: string; icon: IoniconsName; color: string; bg: string }[] = [
-    { label: 'Add Income', icon: 'arrow-down-circle', color: COLORS.success, bg: 'rgba(22,163,74,0.1)' },
-    { label: 'Add Expense', icon: 'arrow-up-circle', color: COLORS.expense, bg: 'rgba(239,68,68,0.1)' },
-    { label: 'Transfer', icon: 'swap-horizontal', color: COLORS.primary, bg: 'rgba(66,133,244,0.1)' },
-    { label: 'Scan Receipt', icon: 'scan-outline', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
-    { label: 'More', icon: 'grid-outline', color: COLORS.secondaryText, bg: 'rgba(107,114,128,0.1)' },
+const QUICK_ACTIONS: { id: string; label: string; icon: IoniconsName; color: string; bg: string; type?: 'income' | 'expense' | 'transfer' }[] = [
+    { id: 'income', label: 'Add Income', icon: 'arrow-down-circle', color: COLORS.success, bg: 'rgba(22,163,74,0.1)', type: 'income' },
+    { id: 'expense', label: 'Add Expense', icon: 'arrow-up-circle', color: COLORS.expense, bg: 'rgba(239,68,68,0.1)', type: 'expense' },
+    { id: 'transfer', label: 'Transfer', icon: 'swap-horizontal', color: COLORS.primary, bg: 'rgba(66,133,244,0.1)', type: 'transfer' },
+    { id: 'scan', label: 'Scan Receipt', icon: 'scan-outline', color: '#8B5CF6', bg: 'rgba(139,92,246,0.1)' },
+    { id: 'more', label: 'More', icon: 'grid-outline', color: COLORS.secondaryText, bg: 'rgba(107,114,128,0.1)' },
 ];
 
-const TRANSACTIONS = [
-    { title: 'Salary', sub: 'Bank Account', amount: '+$3,850.00', date: 'Today', type: 'in', icon: 'briefcase-outline' as IoniconsName },
-    { title: 'Uber', sub: 'Transportation', amount: '-$12.50', date: 'Today', type: 'out', icon: 'car-outline' as IoniconsName },
-    { title: 'Netflix', sub: 'Entertainment', amount: '-$15.99', date: 'Yesterday', type: 'out', icon: 'tv-outline' as IoniconsName },
-    { title: 'Freelance Project', sub: 'Income', amount: '+$650.00', date: 'Jul 18', type: 'in', icon: 'code-slash-outline' as IoniconsName },
-];
-
-import { ScreenBackground } from '../../src/core/components/ScreenBackground';
-
-// Simple sparkline-like dots for balance card
 const SPARKLINE = [40, 55, 35, 65, 45, 70, 60, 80, 55, 90, 75, 95];
 
 export default function HomeScreen() {
     const router = useRouter();
+    const { currency, formatAmount } = useCurrencyStore();
+    const { wallets, transactions, addTransaction } = useAppDataStore();
 
-    const handleQuickAction = (label: string) => {
-        if (label === 'Add Income' || label === 'Add Expense') {
+    // Modals state
+    const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+    const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+    const [quickAddType, setQuickAddType] = useState<'income' | 'expense' | 'transfer'>('expense');
+    const [showScanModal, setShowScanModal] = useState(false);
+    const [showEditActionsModal, setShowEditActionsModal] = useState(false);
+
+    const totalBalanceRwf = wallets.reduce((sum: number, w: any) => sum + (parseFloat(w.balance) || 0), 0);
+
+
+    const formatDate = (dateStr: string) => {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    const getTxIcon = (type: string) => {
+        if (type === 'income') return 'briefcase-outline';
+        if (type === 'transfer') return 'swap-horizontal';
+        return 'card-outline';
+    };
+
+    const handleQuickAction = (action: typeof QUICK_ACTIONS[0]) => {
+        if (action.type) {
+            setQuickAddType(action.type);
+            setShowQuickAddModal(true);
+        } else if (action.id === 'scan') {
+            setShowScanModal(true);
+        } else if (action.id === 'more') {
             router.push('/(tabs)/add');
-        } else if (label === 'Transfer' || label === 'Scan Receipt') {
-            router.push('/(tabs)/transactions');
-        } else if (label === 'More') {
-            router.push('/(tabs)/analytics');
         }
+    };
+
+    const handleSaveTransaction = (data: any) => {
+        Alert.alert(
+            'Transaction Saved',
+            `Successfully added ${data.type.toUpperCase()}: ${data.currency} ${data.amount.toLocaleString()} for ${data.category}.`
+        );
     };
 
     return (
@@ -54,19 +80,28 @@ export default function HomeScreen() {
                             <Text style={styles.name}>Sam 👋</Text>
                         </View>
                     </View>
-                    <TouchableOpacity style={styles.notifBtn}>
-                        <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
-                        <View style={styles.notifDot} />
-                    </TouchableOpacity>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        {/* Currency selector badge */}
+                        <TouchableOpacity style={styles.currencyBadge} onPress={() => setShowCurrencyModal(true)}>
+                            <Text style={styles.currencyFlag}>{CURRENCIES[currency].flag}</Text>
+                            <Text style={styles.currencyText}>{currency}</Text>
+                            <Ionicons name="chevron-down" size={12} color={COLORS.text} />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.notifBtn} onPress={() => Alert.alert('Notifications', 'You have no new unread notifications.')}>
+                            <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
+                            <View style={styles.notifDot} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* ─── Balance Card ─── */}
                 <View style={styles.balanceCard}>
                     <View style={styles.balanceTopRow}>
-                        <Text style={styles.balanceLabel}>Total Balance ✦</Text>
+                        <Text style={styles.balanceLabel}>Total Balance ({currency}) ✦</Text>
                         <Ionicons name="eye-outline" size={18} color="rgba(255,255,255,0.7)" />
                     </View>
-                    <Text style={styles.balanceAmount}>$12,560.50</Text>
+                    <Text style={styles.balanceAmount}>{formatAmount(totalBalanceRwf)}</Text>
+
                     <View style={styles.balanceChangeRow}>
                         <Ionicons name="trending-up" size={13} color={COLORS.success} />
                         <Text style={styles.balanceChange}> 12.5% from last month</Text>
@@ -92,7 +127,7 @@ export default function HomeScreen() {
                             <Ionicons name="arrow-down-circle" size={16} color={COLORS.success} />
                         </View>
                         <Text style={styles.summaryLabel}>Income</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.success }]}>$5,850.00</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.success }]}>{formatAmount(2850000)}</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryItem}>
@@ -100,7 +135,7 @@ export default function HomeScreen() {
                             <Ionicons name="arrow-up-circle" size={16} color={COLORS.expense} />
                         </View>
                         <Text style={styles.summaryLabel}>Expenses</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.expense }]}>$3,240.50</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.expense }]}>{formatAmount(533500)}</Text>
                     </View>
                     <View style={styles.summaryDivider} />
                     <View style={styles.summaryItem}>
@@ -108,7 +143,7 @@ export default function HomeScreen() {
                             <Ionicons name="analytics" size={16} color={COLORS.primary} />
                         </View>
                         <Text style={styles.summaryLabel}>Cash Flow</Text>
-                        <Text style={[styles.summaryValue, { color: COLORS.primary }]}>$2,609.50</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.primary }]}>{formatAmount(2316500)}</Text>
                     </View>
                 </View>
 
@@ -116,13 +151,15 @@ export default function HomeScreen() {
                 <View style={styles.section}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Quick Actions</Text>
-                        <Text style={styles.sectionAction}>Edit</Text>
+                        <TouchableOpacity onPress={() => setShowEditActionsModal(true)}>
+                            <Text style={styles.sectionAction}>Edit</Text>
+                        </TouchableOpacity>
                     </View>
                     <View style={styles.quickActionsRow}>
-                        {QUICK_ACTIONS.map((action, idx) => (
-                            <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => handleQuickAction(action.label)}>
+                        {QUICK_ACTIONS.map((action) => (
+                            <TouchableOpacity key={action.id} style={styles.quickActionBtn} onPress={() => handleQuickAction(action)}>
                                 <View style={[styles.quickActionIcon, { backgroundColor: action.bg }]}>
-                                    <Ionicons name={action.icon} size={20} color={action.color} />
+                                    <Ionicons name={action.icon} size={22} color={action.color} />
                                 </View>
                                 <Text style={styles.quickActionText}>{action.label}</Text>
                             </TouchableOpacity>
@@ -152,31 +189,98 @@ export default function HomeScreen() {
                 {/* ─── Recent Transactions ─── */}
                 <View style={[styles.section, { paddingBottom: 120 }]}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                        <Text style={styles.sectionTitle}>Recent Transactions (5)</Text>
                         <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
                             <Text style={styles.sectionAction}>See all</Text>
                         </TouchableOpacity>
                     </View>
-                    {TRANSACTIONS.map((tx, idx) => (
-                        <View key={idx} style={styles.txItem}>
-                            <View style={[styles.txIconBg, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
+
+                    {transactions.length === 0 ? (
+
+                        <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No recent transactions.</Text>
+                    ) : (
+                        transactions.map((tx: any, idx: number) => (
+                            <View key={tx.id || idx} style={styles.txItem}>
+                                <View style={[styles.txIconBg, { backgroundColor: tx.type === 'income' ? 'rgba(22,163,74,0.1)' : tx.type === 'transfer' ? 'rgba(66,133,244,0.1)' : 'rgba(239,68,68,0.08)' }]}>
+                                    <Ionicons name={getTxIcon(tx.type)} size={20} color={tx.type === 'income' ? COLORS.success : tx.type === 'transfer' ? COLORS.primary : COLORS.expense} />
+                                </View>
+                                <View style={styles.txDetails}>
+                                    <Text style={styles.txTitle}>{tx.title}</Text>
+                                    <Text style={styles.txSub}>{tx.wallet_name || tx.wallets?.name || 'Wallet'}</Text>
+                                </View>
+                                <View style={styles.txAmountContainer}>
+                                    <Text style={[styles.txAmount, { color: tx.type === 'income' ? COLORS.success : tx.type === 'transfer' ? COLORS.primary : COLORS.expense }]}>
+                                        {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '-'}{formatAmount(Math.abs(parseFloat(tx.amount)))}
+                                    </Text>
+                                    <Text style={styles.txDate}>{formatDate(tx.date)}</Text>
+                                </View>
                             </View>
-                            <View style={styles.txDetails}>
-                                <Text style={styles.txTitle}>{tx.title}</Text>
-                                <Text style={styles.txSub}>{tx.sub}</Text>
-                            </View>
-                            <View style={styles.txAmountContainer}>
-                                <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>
-                                    {tx.amount}
-                                </Text>
-                                <Text style={styles.txDate}>{tx.date}</Text>
-                            </View>
-                        </View>
-                    ))}
+                        ))
+                    )}
                 </View>
 
             </ScrollView>
+
+            {/* Currency Selector Modal */}
+            <CurrencySelectorModal
+                visible={showCurrencyModal}
+                onClose={() => setShowCurrencyModal(false)}
+            />
+
+            {/* Quick Add Modal */}
+            <QuickAddModal
+                visible={showQuickAddModal}
+                initialType={quickAddType}
+                onClose={() => setShowQuickAddModal(false)}
+                onSave={handleSaveTransaction}
+            />
+
+            {/* Scan Receipt Modal */}
+            <Modal visible={showScanModal} animationType="slide" transparent onRequestClose={() => setShowScanModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.scanCard}>
+                        <View style={styles.scanHeader}>
+                            <Text style={styles.scanTitle}>Receipt Scanner</Text>
+                            <TouchableOpacity onPress={() => setShowScanModal(false)} style={styles.modalCloseBtn}>
+                                <Ionicons name="close" size={20} color={COLORS.text} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={styles.scanBody}>
+                            <View style={styles.cameraBox}>
+                                <Ionicons name="scan-outline" size={64} color="#8B5CF6" />
+                                <Text style={styles.scanPrompt}>Position receipt within frame</Text>
+                                <Text style={styles.scanSub}>Auto-detects total amount & merchant</Text>
+                            </View>
+                            <TouchableOpacity style={styles.scanBtn} onPress={() => { setShowScanModal(false); Alert.alert('Receipt Scanned', 'Captured receipt: Simba Supermarket (FRw 14,500).'); }}>
+                                <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
+                                <Text style={styles.scanBtnText}>Capture & Parse</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* Edit Quick Actions Modal */}
+            <Modal visible={showEditActionsModal} animationType="fade" transparent onRequestClose={() => setShowEditActionsModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.editCard}>
+                        <Text style={styles.editTitle}>Customize Quick Actions</Text>
+                        <Text style={styles.editSub}>Drag or select shortcuts for your home screen</Text>
+                        <View style={styles.editList}>
+                            {QUICK_ACTIONS.map(act => (
+                                <View key={act.id} style={styles.editItem}>
+                                    <Ionicons name={act.icon} size={18} color={act.color} />
+                                    <Text style={styles.editItemText}>{act.label}</Text>
+                                    <Ionicons name="checkmark-circle" size={18} color={COLORS.success} />
+                                </View>
+                            ))}
+                        </View>
+                        <TouchableOpacity style={styles.editDoneBtn} onPress={() => setShowEditActionsModal(false)}>
+                            <Text style={styles.editDoneText}>Done</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </ScreenBackground>
     );
 }
@@ -189,10 +293,12 @@ const styles = StyleSheet.create({
     avatarSmall: { width: 40, height: 40, borderRadius: 20, backgroundColor: `${COLORS.primary}15`, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: `${COLORS.primary}30` },
     greeting: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
     name: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.text },
+    currencyBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#F4F7FB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: '#EEF1F7' },
+    currencyFlag: { fontSize: 14 },
+    currencyText: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.text },
     notifBtn: { position: 'relative', width: 40, height: 40, borderRadius: 20, backgroundColor: '#F4F7FB', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#EEF1F7' },
     notifDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.expense, borderWidth: 1.5, borderColor: '#FFFFFF' },
 
-    // Balance Card — kept as premium blue feature card
     balanceCard: { marginHorizontal: SIZES.lg, borderRadius: 24, backgroundColor: COLORS.primary, padding: SIZES.xl, marginBottom: SIZES.md, overflow: 'hidden', shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 20, elevation: 10 },
     balanceTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
     balanceLabel: { color: 'rgba(255,255,255,0.75)', fontFamily: FONTS.medium, fontSize: 13, letterSpacing: 0.5 },
@@ -202,7 +308,6 @@ const styles = StyleSheet.create({
     sparkline: { flexDirection: 'row', alignItems: 'flex-end', height: 44, gap: 3, marginTop: 4 },
     sparkBar: { flex: 1, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.35)', minHeight: 4 },
 
-    // Summary
     summaryRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#FFFFFF', marginHorizontal: SIZES.lg, padding: SIZES.lg, borderRadius: 18, marginBottom: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7' },
     summaryItem: { alignItems: 'center', flex: 1, gap: 4 },
     summaryIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
@@ -210,36 +315,54 @@ const styles = StyleSheet.create({
     summaryLabel: { fontFamily: FONTS.medium, color: COLORS.secondaryText, fontSize: 11 },
     summaryValue: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.text },
 
-    // Sections
-    section: { marginBottom: SIZES.lg, paddingHorizontal: SIZES.lg },
+    section: { marginHorizontal: SIZES.lg, marginBottom: SIZES.lg },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-    sectionTitle: { fontFamily: FONTS.semiBold, fontSize: 16, color: COLORS.text },
-    sectionAction: { fontFamily: FONTS.medium, fontSize: 13, color: COLORS.primary },
+    sectionTitle: { fontFamily: FONTS.bold, fontSize: 17, color: COLORS.text },
+    sectionAction: { fontFamily: FONTS.semiBold, fontSize: 13, color: COLORS.primary },
 
-    // Quick Actions
-    quickActionsRow: { flexDirection: 'row', justifyContent: 'space-between' },
-    quickActionBtn: { alignItems: 'center', flex: 1 },
-    quickActionIcon: { width: 52, height: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginBottom: 6, borderWidth: 1, borderColor: '#EEF1F7' },
-    quickActionText: { fontFamily: FONTS.medium, fontSize: 10, color: COLORS.secondaryText, textAlign: 'center' },
+    quickActionsRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    quickActionBtn: { alignItems: 'center', gap: 6, flex: 1 },
+    quickActionIcon: { width: 50, height: 50, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+    quickActionText: { fontFamily: FONTS.medium, fontSize: 11, color: COLORS.text, textAlign: 'center' },
 
-    // AI Card
-    aiCard: { borderRadius: 18, padding: SIZES.md, borderWidth: 1, borderColor: 'rgba(22,163,74,0.2)', backgroundColor: 'rgba(22,163,74,0.06)' },
-    aiHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-    aiIconBg: { width: 30, height: 30, borderRadius: 8, backgroundColor: 'rgba(22,163,74,0.12)', alignItems: 'center', justifyContent: 'center' },
-    aiTitle: { fontFamily: FONTS.semiBold, fontSize: 15, color: COLORS.text, flex: 1 },
-    aiBadge: { backgroundColor: COLORS.primary, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
-    aiBadgeText: { color: '#FFFFFF', fontSize: 10, fontFamily: FONTS.bold },
-    aiBody: { fontFamily: FONTS.regular, fontSize: 13, color: COLORS.secondaryText, lineHeight: 20, marginBottom: 8 },
-    aiLinkRow: { flexDirection: 'row', alignItems: 'center' },
-    aiLink: { fontFamily: FONTS.semiBold, color: COLORS.primary, fontSize: 13 },
+    aiCard: { backgroundColor: '#E6F4EA', borderRadius: 20, padding: SIZES.lg, borderWidth: 1, borderColor: 'rgba(22,163,74,0.2)' },
 
-    // Transactions
-    txItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: SIZES.md, borderRadius: 16, marginBottom: 8, borderWidth: 1, borderColor: '#EEF1F7' },
-    txIconBg: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
+    aiHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    aiIconBg: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
+    aiTitle: { fontFamily: FONTS.bold, fontSize: 15, color: '#166534' },
+    aiBadge: { backgroundColor: '#166534', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+    aiBadgeText: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 10 },
+    aiBody: { fontFamily: FONTS.regular, fontSize: 13, color: '#14532D', lineHeight: 18, marginBottom: 10 },
+    aiLinkRow: { alignSelf: 'flex-start' },
+    aiLink: { fontFamily: FONTS.bold, fontSize: 12, color: '#166534' },
+
+    txItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', padding: 14, borderRadius: 16, marginBottom: 10, borderWidth: 1, borderColor: '#EEF1F7', gap: 12 },
+    txIconBg: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
     txDetails: { flex: 1 },
     txTitle: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
-    txSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
+    txSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, marginTop: 2 },
     txAmountContainer: { alignItems: 'flex-end' },
-    txAmount: { fontFamily: FONTS.semiBold, fontSize: 14 },
-    txDate: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.secondaryText },
+    txAmount: { fontFamily: FONTS.bold, fontSize: 14 },
+    txDate: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.secondaryText, marginTop: 2 },
+
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)', justifyContent: 'center', padding: SIZES.lg },
+    scanCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: SIZES.lg, gap: 16 },
+    scanHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    scanTitle: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.text },
+    modalCloseBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F4F7FB', alignItems: 'center', justifyContent: 'center' },
+    scanBody: { gap: 14, alignItems: 'center' },
+    cameraBox: { width: '100%', height: 200, borderRadius: 18, backgroundColor: '#F5F3FF', borderWidth: 2, borderColor: '#DDD6FE', borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center', gap: 6 },
+    scanPrompt: { fontFamily: FONTS.bold, fontSize: 15, color: '#5B21B6' },
+    scanSub: { fontFamily: FONTS.regular, fontSize: 12, color: '#7C3AED' },
+    scanBtn: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#8B5CF6', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 14 },
+    scanBtnText: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 14 },
+
+    editCard: { backgroundColor: '#FFFFFF', borderRadius: 24, padding: SIZES.xl, gap: 12 },
+    editTitle: { fontFamily: FONTS.bold, fontSize: 18, color: COLORS.text },
+    editSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
+    editList: { gap: 8, marginVertical: 8 },
+    editItem: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, backgroundColor: '#F4F7FB' },
+    editItemText: { flex: 1, fontFamily: FONTS.medium, fontSize: 13, color: COLORS.text },
+    editDoneBtn: { backgroundColor: COLORS.primary, borderRadius: 14, paddingVertical: 12, alignItems: 'center' },
+    editDoneText: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 14 },
 });

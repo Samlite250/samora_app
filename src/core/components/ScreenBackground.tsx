@@ -1,29 +1,34 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, ViewStyle } from 'react-native';
+import { ImageBackground, Platform, StyleSheet, View, ViewStyle, useWindowDimensions } from 'react-native';
 
 interface ScreenBackgroundProps {
     children: React.ReactNode;
     style?: ViewStyle;
-    imageUri?: string;
+    source?: any;
     imageOpacity?: number;
 }
 
-const DEFAULT_BG = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop';
+const DEFAULT_BG = require('../../../assets/images/premium_bg.png');
 
 export const ScreenBackground: React.FC<ScreenBackgroundProps> = ({
     children,
     style,
-    imageUri = DEFAULT_BG,
-    imageOpacity = 0.14,
+    source = DEFAULT_BG,
+    imageOpacity = 0.2,
 }) => {
+    const { width } = useWindowDimensions();
+    const isDesktop = Platform.OS === 'web' && width >= 1024;
+
     return (
         <ImageBackground
-            source={{ uri: imageUri }}
+            source={source}
             style={[styles.container, style]}
             imageStyle={{ opacity: imageOpacity }}
             resizeMode="cover"
         >
-            {children}
+            <View style={[styles.contentWrapper, isDesktop && styles.desktopWrapper]}>
+                {children}
+            </View>
         </ImageBackground>
     );
 };
@@ -33,4 +38,12 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#F4F7FB', // Opaque base prevents React Navigation screen overlap/ghosting
     },
+    contentWrapper: {
+        flex: 1,
+        width: '100%',
+    },
+    desktopWrapper: {
+        maxWidth: 1024,
+        alignSelf: 'center',
+    }
 });
