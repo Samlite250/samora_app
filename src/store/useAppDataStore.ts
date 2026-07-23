@@ -43,7 +43,10 @@ interface AppDataState {
     checkGoalProgress: () => void;
     checkPlanReminders: () => void;
 
-    // Actions
+    // Wallet Actions
+    addWallet: (wallet: Omit<WalletRecord, 'id'>) => Promise<void>;
+    deleteWallet: (id: string) => Promise<void>;
+    editWallet: (id: string, updated: Partial<WalletRecord>) => Promise<void>;
     addTransaction: (tx: Omit<TransactionRecord, 'id'>) => Promise<void>;
     deleteTransaction: (id: string) => Promise<void>;
     editTransaction: (id: string, updated: Partial<TransactionRecord>) => Promise<void>;
@@ -58,7 +61,6 @@ interface AppDataState {
     deleteGoal: (id: string) => Promise<void>;
     editGoal: (id: string, updated: Partial<GoalRecord>) => Promise<void>;
     depositGoal: (goalId: string, amount: number) => Promise<void>;
-    deleteWallet: (id: string) => Promise<void>;
     addPlan: (plan: Omit<PlanRecord, 'id' | 'completed'>) => Promise<void>;
     deletePlan: (id: string) => Promise<void>;
     togglePlanDone: (id: string) => Promise<void>;
@@ -157,6 +159,42 @@ export const useAppDataStore = create<AppDataState>()(
                         `You have ${count} bill(s) due in the next 3 days totaling ${totalAmount} FRw. Make sure your wallets are funded.`
                     );
                 }
+            },
+
+            addWallet: async (newWallet) => {
+                const id = `w_${Date.now()}`;
+                const walletRecord: WalletRecord = {
+                    ...newWallet,
+                    id,
+                };
+                const updatedWallets = [...get().wallets, walletRecord];
+                const updatedBaseMap = { ...get().baseWalletBalances, [id]: newWallet.balance };
+                set({ wallets: updatedWallets, baseWalletBalances: updatedBaseMap });
+            },
+
+            deleteWallet: async (id: string) => {
+                const updatedWallets = get().wallets.filter(w => w.id !== id);
+                const updatedBaseMap = { ...get().baseWalletBalances };
+                delete updatedBaseMap[id];
+                const remainingTxs = get().transactions.filter(t => t.wallet_id !== id);
+                set({ wallets: updatedWallets, baseWalletBalances: updatedBaseMap, transactions: remainingTxs });
+            },
+
+            editWallet: async (id: string, updated: Partial<WalletRecord>) => {
+                const { wallets, baseWalletBalances, transactions } = get();
+                const target = wallets.find(w => w.id === id);
+                if (!target) return;
+
+                let newBaseMap = { ...baseWalletBalances };
+                if (updated.balance !== undefined) {
+                    const txNet = transactions
+                        .filter(t => t.wallet_id === id)
+                        .reduce((sum, t) => sum + (t.type === 'income' ? t.amount : t.type === 'expense' ? -t.amount : 0), 0);
+                    newBaseMap[id] = Math.max(0, updated.balance - txNet);
+                }
+
+                const updatedWallets = wallets.map(w => w.id === id ? { ...w, ...updated } : w);
+                set({ wallets: updatedWallets, baseWalletBalances: newBaseMap });
             },
 
             addTransaction: async (newTx) => {
@@ -391,9 +429,6 @@ export const useAppDataStore = create<AppDataState>()(
                 set({ goals: updatedGoals });
             },
 
-            deleteWallet: async (id: string) => {
-                set({ wallets: get().wallets.filter((w) => w.id !== id) });
-            },
 
             checkGoalProgress: () => {
                 const { goals } = get();

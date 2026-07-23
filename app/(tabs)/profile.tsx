@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Alert,
@@ -262,6 +263,7 @@ function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => voi
 
 /* ─────────────── MAIN PROFILE SCREEN ─────────────── */
 export default function ProfileScreen() {
+    const router = useRouter();
     const { profile, signOut } = useAuthStore();
     const { currency } = useCurrencyStore();
 
@@ -292,9 +294,16 @@ export default function ProfileScreen() {
     ];
 
     const handleLogOut = () => {
-        Alert.alert('Log Out', 'Are you sure you want to log out?', [
+        Alert.alert('Log Out', 'Are you sure you want to log out of your account?', [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Log Out', style: 'destructive', onPress: signOut },
+            {
+                text: 'Log Out',
+                style: 'destructive',
+                onPress: async () => {
+                    await signOut();
+                    router.replace('/(auth)/login');
+                },
+            },
         ]);
     };
 

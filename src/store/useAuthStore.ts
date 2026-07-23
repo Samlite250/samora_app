@@ -85,7 +85,7 @@ export const useAuthStore = create<AuthState>()(
                     session,
                     user,
                     profile: updatedProfile,
-                    isAuthenticated: true,
+                    isAuthenticated: Boolean(session),
                     isLoading: false,
                 });
             },
