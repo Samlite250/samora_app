@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/core/components/Button';
 import { Input } from '../../src/core/components/Input';
 import { VideoBackground } from '../../src/core/components/VideoBackground';
@@ -81,11 +81,13 @@ export default function LoginScreen() {
                 <ScrollView contentContainerStyle={styles.scroll}>
                     <View style={styles.glassCard}>
                         <View style={styles.header}>
-                            <Image
-                                source={require('../../samora_logo.jpeg')}
-                                style={styles.logo}
-                                resizeMode="contain"
-                            />
+                            <View style={styles.logoContainer}>
+                                <Image
+                                    source={require('../../samora_logo.jpeg')}
+                                    style={styles.logo}
+                                    resizeMode="cover"
+                                />
+                            </View>
                             <Text style={styles.title}>Welcome to Samora</Text>
                             <Text style={styles.subtitle}>Manage Money. Plan Life. Achieve More.</Text>
                         </View>
@@ -127,14 +129,6 @@ export default function LoginScreen() {
                                     Sign Up
                                 </Text>
                             </View>
-
-                            {/* TODO: Remove this button once Supabase is configured */}
-                            <TouchableOpacity
-                                style={styles.demoBtn}
-                                onPress={() => router.replace('/(tabs)')}
-                            >
-                                <Text style={styles.demoBtnText}>🚀 Continue as Demo</Text>
-                            </TouchableOpacity>
                         </View>
                     </View>
                 </ScrollView>
@@ -166,10 +160,24 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginBottom: SIZES.xxl,
     },
+    logoContainer: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        overflow: 'hidden',
+        borderWidth: 3,
+        borderColor: COLORS.primary,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SIZES.md,
+        boxShadow: '0px 6px 16px rgba(26, 86, 219, 0.2)',
+        elevation: 6,
+    },
     logo: {
-        width: 100,
-        height: 100,
-        marginBottom: SIZES.lg,
+        width: 82,
+        height: 82,
+        borderRadius: 41,
     },
     title: {
         fontFamily: FONTS.bold,

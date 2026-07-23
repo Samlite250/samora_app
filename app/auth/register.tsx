@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/core/components/Button';
 import { Input } from '../../src/core/components/Input';
 import { VideoBackground } from '../../src/core/components/VideoBackground';
@@ -77,6 +77,13 @@ export default function RegisterScreen() {
                 <ScrollView contentContainerStyle={styles.scroll}>
                     <View style={styles.glassCard}>
                         <View style={styles.header}>
+                            <View style={styles.logoContainer}>
+                                <Image
+                                    source={require('../../samora_logo.jpeg')}
+                                    style={styles.logo}
+                                    resizeMode="cover"
+                                />
+                            </View>
                             <Text style={styles.title}>Create Account</Text>
                             <Text style={styles.subtitle}>Start taking control of your finances today.</Text>
                         </View>
@@ -154,7 +161,27 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     header: {
+        alignItems: 'center',
         marginBottom: SIZES.xxl,
+    },
+    logoContainer: {
+        width: 88,
+        height: 88,
+        borderRadius: 44,
+        overflow: 'hidden',
+        borderWidth: 3,
+        borderColor: COLORS.primary,
+        backgroundColor: '#FFFFFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: SIZES.md,
+        boxShadow: '0px 6px 16px rgba(26, 86, 219, 0.2)',
+        elevation: 6,
+    },
+    logo: {
+        width: 82,
+        height: 82,
+        borderRadius: 41,
     },
     title: {
         fontFamily: FONTS.bold,
