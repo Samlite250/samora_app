@@ -1,6 +1,7 @@
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Button } from '../../src/core/components/Button';
 import { Input } from '../../src/core/components/Input';
 import { VideoBackground } from '../../src/core/components/VideoBackground';
@@ -85,7 +86,7 @@ export default function LoginScreen() {
                                 <Image
                                     source={require('../../samora_logo.jpeg')}
                                     style={styles.logo}
-                                    resizeMode="cover"
+                                    contentFit="cover"
                                 />
                             </View>
                             <Text style={styles.title}>Welcome to Samora</Text>
