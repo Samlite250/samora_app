@@ -304,27 +304,30 @@ export default function PlannerScreen() {
                                     <View style={styles.eventBody}>
                                         <View style={styles.eventTitleRow}>
                                             <Text style={styles.eventTitle}>{evt.title}</Text>
-                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                                <View style={[styles.eventTag, { backgroundColor: color + '15' }]}>
-                                                    <Text style={[styles.eventTagText, { color }]}>{tagText}</Text>
-                                                </View>
-                                                <TouchableOpacity onPress={() => deleteBill(evt.id)} style={{ padding: 4 }}>
-                                                    <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
-                                                </TouchableOpacity>
+                                            <View style={[styles.eventTag, { backgroundColor: color + '15' }]}>
+                                                <Text style={[styles.eventTagText, { color }]}>{tagText}</Text>
                                             </View>
                                         </View>
                                         <View style={styles.eventTimeRow}>
                                             <Ionicons name="time-outline" size={12} color={COLORS.secondaryText} />
                                             <Text style={styles.eventTime}> Due: {evt.due_date} • {formatAmount(amountRwf)}</Text>
                                         </View>
-                                        {!evt.is_paid && (
+                                        <View style={styles.eventActionsRow}>
+                                            {!evt.is_paid && (
+                                                <TouchableOpacity
+                                                    style={styles.payBtn}
+                                                    onPress={() => markBillPaid(evt.id)}>
+                                                    <Ionicons name="checkmark" size={13} color="#FFFFFF" />
+                                                    <Text style={styles.payBtnText}>Mark as Paid</Text>
+                                                </TouchableOpacity>
+                                            )}
                                             <TouchableOpacity
-                                                style={styles.payBtn}
-                                                onPress={() => markBillPaid(evt.id)}>
-                                                <Ionicons name="checkmark" size={13} color="#FFFFFF" />
-                                                <Text style={styles.payBtnText}>Mark as Paid</Text>
+                                                style={styles.deleteActionBtn}
+                                                onPress={() => deleteBill(evt.id)}>
+                                                <Ionicons name="trash-outline" size={13} color={COLORS.expense} />
+                                                <Text style={styles.deleteActionText}>Remove</Text>
                                             </TouchableOpacity>
-                                        )}
+                                        </View>
                                     </View>
                                 </View>
                             );
@@ -580,6 +583,9 @@ const styles = StyleSheet.create({
         marginTop: 6,
     },
     addEventText: { fontFamily: FONTS.bold, fontSize: 14, color: COLORS.primary },
-    payBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.success, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start', marginTop: 6 },
+    payBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: COLORS.success, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
     payBtnText: { fontFamily: FONTS.semiBold, fontSize: 12, color: '#FFFFFF' },
+    eventActionsRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6 },
+    deleteActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${COLORS.expense}12`, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, alignSelf: 'flex-start' },
+    deleteActionText: { fontFamily: FONTS.semiBold, fontSize: 12, color: COLORS.expense },
 });

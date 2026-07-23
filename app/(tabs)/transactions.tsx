@@ -91,15 +91,15 @@ export default function TransactionsScreen() {
                                         <Text style={styles.txTitle}>{tx.title}</Text>
                                         <Text style={styles.txSub}>{tx.wallet_name || tx.wallets?.name || 'Wallet'} • {formatDate(tx.date)}</Text>
                                     </View>
-                                    <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
+                                    <View style={{ alignItems: 'center', flexDirection: 'row', gap: 10 }}>
                                         <Text style={[styles.txAmount, { color }]}>
                                             {prefix}{formatAmount(Math.abs(amountRwf))}
                                         </Text>
                                         <TouchableOpacity
                                             onPress={() => deleteTransaction(tx.id)}
-                                            style={{ padding: 4 }}
+                                            style={styles.deleteBtn}
                                         >
-                                            <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
+                                            <Ionicons name="trash-outline" size={14} color={COLORS.expense} />
                                         </TouchableOpacity>
                                     </View>
                                 </View>
@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     txTitle: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
     txSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
     txAmount: { fontFamily: FONTS.mono, fontSize: 14 },
+    deleteBtn: { width: 28, height: 28, borderRadius: 14, backgroundColor: `${COLORS.expense}15`, alignItems: 'center', justifyContent: 'center' },
     viewAllBtn: { paddingVertical: 14, alignItems: 'center' },
     viewAllText: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.primary },
 });
