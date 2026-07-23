@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     txDetails: { flex: 1 },
     txTitle: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
     txSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
-    txAmount: { fontFamily: FONTS.semiBold, fontSize: 14 },
+    txAmount: { fontFamily: FONTS.mono, fontSize: 14 },
     viewAllBtn: { paddingVertical: 14, alignItems: 'center' },
     viewAllText: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.primary },
 });

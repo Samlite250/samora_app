@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     cardDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#86efac' },
     balanceLabel: { color: 'rgba(255,255,255,0.72)', fontFamily: FONTS.medium, fontSize: 12, letterSpacing: 0.4 },
     eyeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
-    balanceAmount: { color: '#FFFFFF', fontFamily: FONTS.bold, fontSize: 40, letterSpacing: -1.5, marginBottom: 10 },
+    balanceAmount: { color: '#FFFFFF', fontFamily: FONTS.mono, fontSize: 40, letterSpacing: -1, marginBottom: 10 },
     balanceChangeRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.14)', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, marginBottom: 14, gap: 4 },
     balanceChange: { color: 'rgba(255,255,255,0.95)', fontFamily: FONTS.medium, fontSize: 12 },
     cardDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 14 },
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
     cardStatIconIn: { width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(134,239,172,0.18)', alignItems: 'center', justifyContent: 'center' },
     cardStatIconOut: { width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(252,165,165,0.18)', alignItems: 'center', justifyContent: 'center' },
     cardStatLabel: { fontFamily: FONTS.regular, fontSize: 11, color: 'rgba(255,255,255,0.65)' },
-    cardStatVal: { fontFamily: FONTS.bold, fontSize: 14, color: '#FFFFFF' },
+    cardStatVal: { fontFamily: FONTS.monoMedium, fontSize: 14, color: '#FFFFFF' },
     sparkline: { flexDirection: 'row', alignItems: 'flex-end', height: 38, gap: 3 },
     sparkBar: { flex: 1, borderRadius: 3, minHeight: 4 },
 
@@ -387,7 +387,8 @@ const styles = StyleSheet.create({
     summaryIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
     summaryDivider: { width: 1, backgroundColor: '#EEF1F7' },
     summaryLabel: { fontFamily: FONTS.medium, color: COLORS.secondaryText, fontSize: 11 },
-    summaryValue: { fontFamily: FONTS.bold, fontSize: 13, color: COLORS.text },
+    summaryValue: { fontFamily: FONTS.monoMedium, fontSize: 12, color: COLORS.text },
+
 
     section: { marginHorizontal: SIZES.lg, marginBottom: SIZES.lg },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
@@ -416,7 +417,7 @@ const styles = StyleSheet.create({
     txTitle: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
     txSub: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, marginTop: 2 },
     txAmountContainer: { alignItems: 'flex-end' },
-    txAmount: { fontFamily: FONTS.bold, fontSize: 14 },
+    txAmount: { fontFamily: FONTS.mono, fontSize: 14 },
     txDate: { fontFamily: FONTS.regular, fontSize: 11, color: COLORS.secondaryText, marginTop: 2 },
 
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.45)', justifyContent: 'center', padding: SIZES.lg },

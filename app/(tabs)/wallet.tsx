@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
     walletName: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
     walletAcc: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText, marginTop: 2 },
     walletRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    walletAmount: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.text },
+    walletAmount: { fontFamily: FONTS.mono, fontSize: 14, color: COLORS.text },
     periodPill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#FFFFFF', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: '#EEF1F7' },
     periodText: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.secondaryText },
     activityCard: { backgroundColor: '#FFFFFF', borderRadius: 18, padding: SIZES.lg, borderWidth: 1, borderColor: '#EEF1F7' },
@@ -161,7 +161,8 @@ const styles = StyleSheet.create({
     statItem: { flex: 1, alignItems: 'center', gap: 4 },
     statDot: { width: 8, height: 8, borderRadius: 4 },
     statLabel: { fontFamily: FONTS.medium, fontSize: 12, color: COLORS.secondaryText },
-    statValue: { fontFamily: FONTS.bold, fontSize: 16 },
+    statValue: { fontFamily: FONTS.monoMedium, fontSize: 15 },
+
     statDivider: { width: 1, backgroundColor: '#EEF1F7' },
     chart: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', height: 100, marginBottom: 12 },
     barGroup: { flex: 1, alignItems: 'center', gap: 4 },

@@ -1,30 +1,30 @@
 export const COLORS = {
     // Primary
-    primary: '#4285F4', // Google Blue
+    primary: '#1A56DB',       // Deep Finance Blue
 
     // Secondary
-    secondary: '#D4AF37', // Luxury Gold
+    secondary: '#C9A84C',     // Refined Gold
 
     // Status
-    success: '#16A34A', // Emerald Green
-    warning: '#F59E0B', // Amber
-    expense: '#EF4444', // Soft Red
-    danger: '#EF4444',
+    success: '#16A34A',       // Emerald Green
+    warning: '#D97706',       // Warm Amber
+    expense: '#DC2626',       // Bold Red
+    danger: '#DC2626',
 
     // Backgrounds
-    background: '#FFFFFF', // White
-    secondaryBackground: '#F8FAFC', // Light Gray
+    background: '#FFFFFF',
+    secondaryBackground: '#F8FAFC',
     card: '#FFFFFF',
-    sectionBackground: '#F5F9FF', // Soft Blue
+    sectionBackground: '#F0F5FF',
 
     // Text
-    text: '#1F2937', // Dark Gray
-    secondaryText: '#6B7280', // Gray
+    text: '#111827',          // Near-Black
+    secondaryText: '#6B7280',
     lightText: '#FFFFFF',
 
     // UI elements
     border: '#E5E7EB',
-    divider: '#F3F4F6'
+    divider: '#F3F4F6',
 };
 
 export const SIZES = {
@@ -44,11 +44,21 @@ export const SIZES = {
     radiusXl: 30,
 };
 
+/**
+ * FONT STACK
+ * UI text:      DM Sans  — clean, geometric, professional (fintech standard)
+ * Mono/numbers: DM Mono  — tabular, ensures aligned financial figures
+ */
 export const FONTS = {
-    regular: 'Inter-Regular',
-    medium: 'Inter-Medium',
-    semiBold: 'Inter-SemiBold',
-    bold: 'Inter-Bold',
+    // DM Sans – all UI text, labels, headings
+    regular: 'DMSans-Regular',
+    medium: 'DMSans-Medium',
+    semiBold: 'DMSans-SemiBold',
+    bold: 'DMSans-Bold',
+
+    // DM Mono – currency amounts, account numbers, stats
+    mono: 'DMMono-Regular',
+    monoMedium: 'DMMono-Medium',
 };
 
 export const SHADOWS = {
@@ -65,5 +75,12 @@ export const SHADOWS = {
         shadowOpacity: 0.1,
         shadowRadius: 12,
         elevation: 4,
+    },
+    card: {
+        shadowColor: '#1A56DB',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 8,
     },
 };
