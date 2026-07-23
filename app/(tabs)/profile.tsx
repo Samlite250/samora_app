@@ -14,6 +14,7 @@ import {
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { CurrencySelectorModal } from '../../src/presentation/components/CurrencySelectorModal';
+import { ExportStatementModal } from '../../src/presentation/components/ExportStatementModal';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CURRENCIES, useCurrencyStore } from '../../src/store/useCurrencyStore';
 
@@ -273,12 +274,14 @@ export default function ProfileScreen() {
         linked: false,
         help: false,
         about: false,
+        export: false,
     });
     const show = (key: keyof typeof modals) => setModals(m => ({ ...m, [key]: true }));
     const hide = (key: keyof typeof modals) => setModals(m => ({ ...m, [key]: false }));
 
     const MENU: { label: string; icon: IoniconsName; color: string; sub?: string; key: keyof typeof modals }[] = [
         { label: 'Display Currency', icon: 'globe-outline', color: COLORS.primary, sub: `${CURRENCIES[currency].name} (${currency})`, key: 'currency' },
+        { label: 'Download Financial Statement', icon: 'document-text-outline', color: COLORS.primary, sub: 'PDF Report & CSV Export', key: 'export' },
         { label: 'Personal Information', icon: 'person-outline', color: COLORS.primary, sub: `${profile.fullName} • ${profile.phone}`, key: 'personal' },
         { label: 'Security & Privacy', icon: 'shield-checkmark-outline', color: COLORS.success, key: 'security' },
         { label: 'Preferences', icon: 'settings-outline', color: '#8B5CF6', key: 'prefs' },
@@ -350,6 +353,7 @@ export default function ProfileScreen() {
 
             {/* ─── All Modals ─── */}
             <CurrencySelectorModal visible={modals.currency} onClose={() => hide('currency')} />
+            <ExportStatementModal visible={modals.export} onClose={() => hide('export')} />
             <PersonalInfoModal visible={modals.personal} onClose={() => hide('personal')} />
             <SecurityModal visible={modals.security} onClose={() => hide('security')} />
             <PreferencesModal visible={modals.prefs} onClose={() => hide('prefs')} />

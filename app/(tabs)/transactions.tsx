@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
+import { ExportStatementModal } from '../../src/presentation/components/ExportStatementModal';
 import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
 
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
@@ -27,6 +28,7 @@ export default function TransactionsScreen() {
     const [activeFilter, setActiveFilter] = useState('All');
     const [search, setSearch] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
     const { formatAmount } = useCurrencyStore();
     const { transactions: allTransactions, deleteTransaction } = useAppDataStore();
@@ -44,9 +46,16 @@ export default function TransactionsScreen() {
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Transactions ({allTransactions.length})</Text>
-                    <TouchableOpacity style={styles.addBtn} onPress={() => setIsAddModalOpen(true)}>
-                        <Ionicons name="add" size={22} color={COLORS.primary} />
-                    </TouchableOpacity>
+                    <View style={styles.headerRightRow}>
+                        <TouchableOpacity style={styles.exportHeaderBtn} onPress={() => setIsExportModalOpen(true)}>
+                            <Ionicons name="download-outline" size={18} color={COLORS.primary} />
+                            <Text style={styles.exportHeaderBtnText}>Export</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.addBtn} onPress={() => setIsAddModalOpen(true)}>
+                            <Ionicons name="add" size={22} color={COLORS.primary} />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
 
@@ -112,6 +121,11 @@ export default function TransactionsScreen() {
                     visible={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}
                 />
+
+                <ExportStatementModal
+                    visible={isExportModalOpen}
+                    onClose={() => setIsExportModalOpen(false)}
+                />
             </View>
         </ScreenBackground>
     );
@@ -123,6 +137,9 @@ const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: 'transparent' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerTitle: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
+    headerRightRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    exportHeaderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: `${COLORS.primary}12` },
+    exportHeaderBtnText: { fontFamily: FONTS.semiBold, fontSize: 13, color: COLORS.primary },
     addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${COLORS.primary}12`, alignItems: 'center', justifyContent: 'center' },
     searchWrap: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', margin: SIZES.lg, marginBottom: 10, borderRadius: 12, borderWidth: 1, borderColor: '#EEF1F7', height: 44 },
     searchInput: { flex: 1, paddingHorizontal: 10, fontFamily: FONTS.regular, fontSize: 14, color: COLORS.text },
