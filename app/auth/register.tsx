@@ -53,16 +53,8 @@ export default function RegisterScreen() {
         await useAuthStore.getState().updateProfile({ fullName, email });
         useAuthStore.setState({ isAuthenticated: true });
 
-        Alert.alert(
-            'Account Created!',
-            `Welcome to Samora, ${firstName}! Your account and profile are ready.`,
-            [
-                {
-                    text: 'Get Started',
-                    onPress: () => router.replace('/(tabs)'),
-                },
-            ]
-        );
+        // Navigate immediately for cross-platform (Web & Mobile) compatibility
+        router.replace('/(tabs)');
     };
 
     return (
