@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 // Spending donut segments (approximation using bars)
@@ -16,88 +17,90 @@ const CASHFLOW_POINTS = [38, 42, 30, 50, 45, 62, 55, 70, 65, 75, 68, 85];
 
 export default function AnalyticsScreen() {
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Analytics</Text>
-                <TouchableOpacity>
-                    <Ionicons name="download-outline" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Analytics</Text>
+                    <TouchableOpacity>
+                        <Ionicons name="download-outline" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
+                </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
-                {/* Period Selector */}
-                <TouchableOpacity style={styles.periodPill}>
-                    <Text style={styles.periodText}>This Month</Text>
-                    <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
-                </TouchableOpacity>
+                    {/* Period Selector */}
+                    <TouchableOpacity style={styles.periodPill}>
+                        <Text style={styles.periodText}>This Month</Text>
+                        <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
+                    </TouchableOpacity>
 
-                {/* ─── Spending Overview ─── */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Spending Overview</Text>
-                    <View style={styles.donutRow}>
-                        {/* Simplified donut chart */}
-                        <View style={styles.donutWrap}>
-                            <View style={styles.donutOuter}>
-                                <View style={styles.donutInner}>
-                                    <Text style={styles.donutAmt}>$3,240.50</Text>
-                                    <Text style={styles.donutSub}>Total Expenses</Text>
+                    {/* ─── Spending Overview ─── */}
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Spending Overview</Text>
+                        <View style={styles.donutRow}>
+                            {/* Simplified donut chart */}
+                            <View style={styles.donutWrap}>
+                                <View style={styles.donutOuter}>
+                                    <View style={styles.donutInner}>
+                                        <Text style={styles.donutAmt}>$3,240.50</Text>
+                                        <Text style={styles.donutSub}>Total Expenses</Text>
+                                    </View>
                                 </View>
+                                {/* Colored arc segments as colored ring */}
+                                {SPENDING_CATEGORIES.map((c, i) => (
+                                    <View key={i} style={[styles.donutSegment, { backgroundColor: c.color, width: `${c.percent * 0.9}%`, height: 6, borderRadius: 3, marginBottom: 3 }]} />
+                                ))}
                             </View>
-                            {/* Colored arc segments as colored ring */}
-                            {SPENDING_CATEGORIES.map((c, i) => (
-                                <View key={i} style={[styles.donutSegment, { backgroundColor: c.color, width: `${c.percent * 0.9}%`, height: 6, borderRadius: 3, marginBottom: 3 }]} />
-                            ))}
-                        </View>
-                        <View style={styles.legendList}>
-                            {SPENDING_CATEGORIES.map((c, i) => (
-                                <View key={i} style={styles.legendItem}>
-                                    <View style={[styles.legendDot, { backgroundColor: c.color }]} />
-                                    <Text style={styles.legendLabel}>{c.label}</Text>
-                                    <Text style={styles.legendPct}>{c.percent}%</Text>
-                                </View>
-                            ))}
+                            <View style={styles.legendList}>
+                                {SPENDING_CATEGORIES.map((c, i) => (
+                                    <View key={i} style={styles.legendItem}>
+                                        <View style={[styles.legendDot, { backgroundColor: c.color }]} />
+                                        <Text style={styles.legendLabel}>{c.label}</Text>
+                                        <Text style={styles.legendPct}>{c.percent}%</Text>
+                                    </View>
+                                ))}
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* ─── Cash Flow ─── */}
-                <View style={styles.card}>
-                    <View style={styles.cashFlowHeader}>
-                        <Text style={styles.cardTitle}>Cash Flow</Text>
-                        <TouchableOpacity style={styles.periodPillSm}>
-                            <Text style={styles.periodTextSm}>This Month</Text>
-                            <Ionicons name="chevron-down" size={12} color={COLORS.secondaryText} />
-                        </TouchableOpacity>
-                    </View>
-
-                    <Text style={styles.cashFlowAmt}>$2,609.50</Text>
-                    <Text style={styles.cashFlowSub}>Net Cash Flow</Text>
-                    <View style={styles.cashFlowBadge}>
-                        <Ionicons name="trending-up" size={13} color={COLORS.success} />
-                        <Text style={styles.cashFlowBadgeText}> 12.3% from last month</Text>
-                    </View>
-
-                    {/* Line chart */}
-                    <View style={styles.lineChart}>
-                        <View style={styles.lineChartBars}>
-                            {CASHFLOW_POINTS.map((h, i) => (
-                                <View key={i} style={styles.lineChartBarWrap}>
-                                    <View style={[styles.lineChartBar, { height: h, backgroundColor: i === CASHFLOW_POINTS.length - 1 ? COLORS.primary : `${COLORS.primary}40` }]} />
-                                </View>
-                            ))}
+                    {/* ─── Cash Flow ─── */}
+                    <View style={styles.card}>
+                        <View style={styles.cashFlowHeader}>
+                            <Text style={styles.cardTitle}>Cash Flow</Text>
+                            <TouchableOpacity style={styles.periodPillSm}>
+                                <Text style={styles.periodTextSm}>This Month</Text>
+                                <Ionicons name="chevron-down" size={12} color={COLORS.secondaryText} />
+                            </TouchableOpacity>
                         </View>
-                        <View style={styles.lineChartLabels}>
-                            {['1', '7', '14', '21', '28'].map(l => (
-                                <Text key={l} style={styles.lineChartLabel}>{l}</Text>
-                            ))}
+
+                        <Text style={styles.cashFlowAmt}>$2,609.50</Text>
+                        <Text style={styles.cashFlowSub}>Net Cash Flow</Text>
+                        <View style={styles.cashFlowBadge}>
+                            <Ionicons name="trending-up" size={13} color={COLORS.success} />
+                            <Text style={styles.cashFlowBadgeText}> 12.3% from last month</Text>
+                        </View>
+
+                        {/* Line chart */}
+                        <View style={styles.lineChart}>
+                            <View style={styles.lineChartBars}>
+                                {CASHFLOW_POINTS.map((h, i) => (
+                                    <View key={i} style={styles.lineChartBarWrap}>
+                                        <View style={[styles.lineChartBar, { height: h, backgroundColor: i === CASHFLOW_POINTS.length - 1 ? COLORS.primary : `${COLORS.primary}40` }]} />
+                                    </View>
+                                ))}
+                            </View>
+                            <View style={styles.lineChartLabels}>
+                                {['1', '7', '14', '21', '28'].map(l => (
+                                    <Text key={l} style={styles.lineChartLabel}>{l}</Text>
+                                ))}
+                            </View>
                         </View>
                     </View>
-                </View>
 
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

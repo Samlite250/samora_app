@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -22,72 +23,74 @@ export default function PlannerScreen() {
 
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Planner</Text>
-                <TouchableOpacity style={styles.addBtn}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Month selector */}
-            <TouchableOpacity style={styles.monthHeader}>
-                <Text style={styles.monthText}>May 2024</Text>
-                <Ionicons name="chevron-down" size={14} color={COLORS.secondaryText} />
-            </TouchableOpacity>
-
-            {/* Calendar strip */}
-            <View style={styles.calendarStrip}>
-                {DAYS.map((day, idx) => {
-                    const isActive = idx === activeDay;
-                    const isToday = idx === 4;
-                    return (
-                        <TouchableOpacity key={idx} style={[styles.dayColumn, isActive && styles.dayActive]} onPress={() => setActiveDay(idx)}>
-                            <Text style={[styles.dayName, isActive && styles.dayTextActive]}>{day}</Text>
-                            <Text style={[styles.dayNumber, isActive && styles.dayTextActive, isToday && !isActive && { color: COLORS.primary }]}>{DATES[idx]}</Text>
-                            {isToday && !isActive && <View style={styles.todayDot} />}
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <View style={styles.todayRow}>
-                    <Text style={styles.todayLabel}>Today • May 29, 2024</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Planner</Text>
+                    <TouchableOpacity style={styles.addBtn}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
                 </View>
 
-                {EVENTS.map((evt, idx) => (
-                    <TouchableOpacity key={idx} style={styles.eventCard} onPress={() => router.push('/(tabs)/bills')}>
-                        <View style={[styles.eventBar, { backgroundColor: evt.color }]} />
-                        <View style={[styles.eventIconBg, { backgroundColor: evt.color + '18' }]}>
-                            <Ionicons name={evt.icon} size={18} color={evt.color} />
-                        </View>
-                        <View style={styles.eventBody}>
-                            <View style={styles.eventTitleRow}>
-                                <Text style={styles.eventTitle}>{evt.title}</Text>
-                                {evt.tag && (
-                                    <View style={[styles.eventTag, { backgroundColor: (evt.tagColor ?? COLORS.primary) + '18' }]}>
-                                        <Text style={[styles.eventTagText, { color: evt.tagColor }]}>{evt.tag}</Text>
-                                    </View>
-                                )}
-                            </View>
-                            <View style={styles.eventTimeRow}>
-                                <Ionicons name="time-outline" size={12} color={COLORS.secondaryText} />
-                                <Text style={styles.eventTime}> {evt.time}</Text>
-                            </View>
-                        </View>
-                        <Ionicons name="chevron-forward" size={14} color={COLORS.border} />
-                    </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity style={styles.addEventBtn} onPress={() => router.push('/(tabs)/bills')}>
-                    <Ionicons name="add" size={18} color={COLORS.primary} />
-                    <Text style={styles.addEventText}>Add Event</Text>
+                {/* Month selector */}
+                <TouchableOpacity style={styles.monthHeader}>
+                    <Text style={styles.monthText}>May 2024</Text>
+                    <Ionicons name="chevron-down" size={14} color={COLORS.secondaryText} />
                 </TouchableOpacity>
 
-            </ScrollView>
-        </View>
+                {/* Calendar strip */}
+                <View style={styles.calendarStrip}>
+                    {DAYS.map((day, idx) => {
+                        const isActive = idx === activeDay;
+                        const isToday = idx === 4;
+                        return (
+                            <TouchableOpacity key={idx} style={[styles.dayColumn, isActive && styles.dayActive]} onPress={() => setActiveDay(idx)}>
+                                <Text style={[styles.dayName, isActive && styles.dayTextActive]}>{day}</Text>
+                                <Text style={[styles.dayNumber, isActive && styles.dayTextActive, isToday && !isActive && { color: COLORS.primary }]}>{DATES[idx]}</Text>
+                                {isToday && !isActive && <View style={styles.todayDot} />}
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <View style={styles.todayRow}>
+                        <Text style={styles.todayLabel}>Today • May 29, 2024</Text>
+                    </View>
+
+                    {EVENTS.map((evt, idx) => (
+                        <TouchableOpacity key={idx} style={styles.eventCard} onPress={() => router.push('/(tabs)/bills')}>
+                            <View style={[styles.eventBar, { backgroundColor: evt.color }]} />
+                            <View style={[styles.eventIconBg, { backgroundColor: evt.color + '18' }]}>
+                                <Ionicons name={evt.icon} size={18} color={evt.color} />
+                            </View>
+                            <View style={styles.eventBody}>
+                                <View style={styles.eventTitleRow}>
+                                    <Text style={styles.eventTitle}>{evt.title}</Text>
+                                    {evt.tag && (
+                                        <View style={[styles.eventTag, { backgroundColor: (evt.tagColor ?? COLORS.primary) + '18' }]}>
+                                            <Text style={[styles.eventTagText, { color: evt.tagColor }]}>{evt.tag}</Text>
+                                        </View>
+                                    )}
+                                </View>
+                                <View style={styles.eventTimeRow}>
+                                    <Ionicons name="time-outline" size={12} color={COLORS.secondaryText} />
+                                    <Text style={styles.eventTime}> {evt.time}</Text>
+                                </View>
+                            </View>
+                            <Ionicons name="chevron-forward" size={14} color={COLORS.border} />
+                        </TouchableOpacity>
+                    ))}
+
+                    <TouchableOpacity style={styles.addEventBtn} onPress={() => router.push('/(tabs)/bills')}>
+                        <Ionicons name="add" size={18} color={COLORS.primary} />
+                        <Text style={styles.addEventText}>Add Event</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

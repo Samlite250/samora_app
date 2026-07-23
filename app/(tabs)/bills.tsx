@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -22,50 +23,52 @@ export default function BillsScreen() {
     const [tab, setTab] = useState<'Upcoming' | 'Paid'>('Upcoming');
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Bills</Text>
-                <TouchableOpacity style={styles.addBtn}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Tabs */}
-            <View style={styles.tabsRow}>
-                {(['Upcoming', 'Paid'] as const).map(t => (
-                    <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
-                        <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t}</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Bills</Text>
+                    <TouchableOpacity style={styles.addBtn}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
-                ))}
+                </View>
+
+                {/* Tabs */}
+                <View style={styles.tabsRow}>
+                    {(['Upcoming', 'Paid'] as const).map(t => (
+                        <TouchableOpacity key={t} style={[styles.tab, tab === t && styles.tabActive]} onPress={() => setTab(t)}>
+                            <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    {(tab === 'Upcoming' ? UPCOMING_BILLS : PAID_BILLS).map((b, i) => (
+                        <View key={i} style={styles.billCard}>
+                            <View style={[styles.billIcon, { backgroundColor: b.color + '15' }]}>
+                                <Ionicons name={b.icon} size={20} color={b.color} />
+                            </View>
+                            <View style={styles.billBody}>
+                                <Text style={styles.billLabel}>{b.label}</Text>
+                                <Text style={styles.billDue}>{tab === 'Upcoming' ? (b as any).due : (b as any).paid}</Text>
+                            </View>
+                            <View style={styles.billRight}>
+                                <Text style={styles.billAmt}>{b.amount}</Text>
+                                {tab === 'Upcoming' && (
+                                    <TouchableOpacity style={styles.payBtn}>
+                                        <Text style={styles.payBtnText}>Pay</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                    ))}
+
+                    <TouchableOpacity style={styles.viewAllBtn}>
+                        <Text style={styles.viewAllText}>View All Bills →</Text>
+                    </TouchableOpacity>
+                </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {(tab === 'Upcoming' ? UPCOMING_BILLS : PAID_BILLS).map((b, i) => (
-                    <View key={i} style={styles.billCard}>
-                        <View style={[styles.billIcon, { backgroundColor: b.color + '15' }]}>
-                            <Ionicons name={b.icon} size={20} color={b.color} />
-                        </View>
-                        <View style={styles.billBody}>
-                            <Text style={styles.billLabel}>{b.label}</Text>
-                            <Text style={styles.billDue}>{tab === 'Upcoming' ? (b as any).due : (b as any).paid}</Text>
-                        </View>
-                        <View style={styles.billRight}>
-                            <Text style={styles.billAmt}>{b.amount}</Text>
-                            {tab === 'Upcoming' && (
-                                <TouchableOpacity style={styles.payBtn}>
-                                    <Text style={styles.payBtnText}>Pay</Text>
-                                </TouchableOpacity>
-                            )}
-                        </View>
-                    </View>
-                ))}
-
-                <TouchableOpacity style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View All Bills →</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </View>
+        </ScreenBackground>
     );
 }
 

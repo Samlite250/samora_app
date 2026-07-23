@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { useAuthStore } from '../../src/store/useAuthStore';
 
@@ -50,61 +51,63 @@ export default function ProfileScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Profile</Text>
-                <TouchableOpacity style={styles.settingsBtn}>
-                    <Ionicons name="settings-outline" size={20} color={COLORS.text} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-                {/* ─── Profile Hero ─── */}
-                <View style={styles.profileHero}>
-                    <View style={styles.avatarWrapper}>
-                        <View style={styles.avatarBg}>
-                            <Ionicons name="person" size={44} color={COLORS.primary} />
-                        </View>
-                        <TouchableOpacity style={styles.editAvatar}>
-                            <Ionicons name="camera" size={13} color="#FFFFFF" />
-                        </TouchableOpacity>
-                    </View>
-                    <Text style={styles.profileName}>Sam Ndayambaje</Text>
-                    <Text style={styles.profileEmail}>sam@samora.com</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Profile</Text>
+                    <TouchableOpacity style={styles.settingsBtn}>
+                        <Ionicons name="settings-outline" size={20} color={COLORS.text} />
+                    </TouchableOpacity>
                 </View>
 
-                {/* ─── Menu Items ─── */}
-                <View style={styles.menuCard}>
-                    {MENU_ITEMS.map((item, idx) => (
-                        <TouchableOpacity
-                            key={item.label}
-                            style={[styles.menuRow, idx < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
-                            onPress={() => handleMenuPress(item.label)}
-                        >
-                            <View style={[styles.menuIconBg, { backgroundColor: item.iconColor + '15' }]}>
-                                <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+                    {/* ─── Profile Hero ─── */}
+                    <View style={styles.profileHero}>
+                        <View style={styles.avatarWrapper}>
+                            <View style={styles.avatarBg}>
+                                <Ionicons name="person" size={44} color={COLORS.primary} />
                             </View>
-                            <Text style={styles.menuText}>{item.label}</Text>
-                            {item.badge && (
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>{item.badge}</Text>
+                            <TouchableOpacity style={styles.editAvatar}>
+                                <Ionicons name="camera" size={13} color="#FFFFFF" />
+                            </TouchableOpacity>
+                        </View>
+                        <Text style={styles.profileName}>Sam Ndayambaje</Text>
+                        <Text style={styles.profileEmail}>sam@samora.com</Text>
+                    </View>
+
+                    {/* ─── Menu Items ─── */}
+                    <View style={styles.menuCard}>
+                        {MENU_ITEMS.map((item, idx) => (
+                            <TouchableOpacity
+                                key={item.label}
+                                style={[styles.menuRow, idx < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
+                                onPress={() => handleMenuPress(item.label)}
+                            >
+                                <View style={[styles.menuIconBg, { backgroundColor: item.iconColor + '15' }]}>
+                                    <Ionicons name={item.icon} size={18} color={item.iconColor} />
                                 </View>
-                            )}
-                            <Ionicons name="chevron-forward" size={16} color={COLORS.border} />
-                        </TouchableOpacity>
-                    ))}
-                </View>
+                                <Text style={styles.menuText}>{item.label}</Text>
+                                {item.badge && (
+                                    <View style={styles.badge}>
+                                        <Text style={styles.badgeText}>{item.badge}</Text>
+                                    </View>
+                                )}
+                                <Ionicons name="chevron-forward" size={16} color={COLORS.border} />
+                            </TouchableOpacity>
+                        ))}
+                    </View>
 
-                {/* ─── Log Out ─── */}
-                <TouchableOpacity style={styles.logoutBtn} onPress={handleLogOut}>
-                    <Ionicons name="log-out-outline" size={18} color={COLORS.expense} />
-                    <Text style={styles.logoutText}>Log Out</Text>
-                </TouchableOpacity>
+                    {/* ─── Log Out ─── */}
+                    <TouchableOpacity style={styles.logoutBtn} onPress={handleLogOut}>
+                        <Ionicons name="log-out-outline" size={18} color={COLORS.expense} />
+                        <Text style={styles.logoutText}>Log Out</Text>
+                    </TouchableOpacity>
 
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

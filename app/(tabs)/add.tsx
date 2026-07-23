@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -45,38 +46,40 @@ export default function AddScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Add New</Text>
-                <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
-                    <Ionicons name="close" size={22} color={COLORS.text} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.promptText}>What would you like to do?</Text>
-                <Text style={styles.promptSub}>Select an action to get started</Text>
-
-                <View style={styles.grid}>
-                    {ACTIONS.map((action) => (
-                        <TouchableOpacity
-                            key={action.id}
-                            style={styles.gridItem}
-                            activeOpacity={0.7}
-                            onPress={() => handleActionPress(action.id)}>
-                            <View style={styles.actionCard}>
-                                <View style={[styles.iconContainer, { backgroundColor: action.color + '12' }]}>
-                                    <Ionicons name={action.icon} size={24} color={action.color} />
-                                </View>
-                                <Text style={styles.actionLabel}>{action.label}</Text>
-                                <Text style={styles.actionDesc}>{action.desc}</Text>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Add New</Text>
+                    <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+                        <Ionicons name="close" size={22} color={COLORS.text} />
+                    </TouchableOpacity>
                 </View>
-            </ScrollView>
-        </View>
+
+                <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+                    <Text style={styles.promptText}>What would you like to do?</Text>
+                    <Text style={styles.promptSub}>Select an action to get started</Text>
+
+                    <View style={styles.grid}>
+                        {ACTIONS.map((action) => (
+                            <TouchableOpacity
+                                key={action.id}
+                                style={styles.gridItem}
+                                activeOpacity={0.7}
+                                onPress={() => handleActionPress(action.id)}>
+                                <View style={styles.actionCard}>
+                                    <View style={[styles.iconContainer, { backgroundColor: action.color + '12' }]}>
+                                        <Ionicons name={action.icon} size={24} color={action.color} />
+                                    </View>
+                                    <Text style={styles.actionLabel}>{action.label}</Text>
+                                    <Text style={styles.actionDesc}>{action.desc}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

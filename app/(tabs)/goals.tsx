@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -14,42 +15,44 @@ const GOALS = [
 
 export default function GoalsScreen() {
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Goals</Text>
-                <TouchableOpacity style={styles.addBtn}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Goals</Text>
+                    <TouchableOpacity style={styles.addBtn}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    {GOALS.map((g, i) => (
+                        <View key={i} style={styles.goalCard}>
+                            <View style={[styles.goalIconBg, { backgroundColor: g.color + '15' }]}>
+                                <Ionicons name={g.icon} size={22} color={g.color} />
+                            </View>
+                            <View style={styles.goalBody}>
+                                <View style={styles.goalTitleRow}>
+                                    <Text style={styles.goalLabel}>{g.label}</Text>
+                                    <Text style={[styles.goalPct, { color: g.color }]}>{g.pct}%</Text>
+                                </View>
+                                <View style={styles.progressBg}>
+                                    <View style={[styles.progressFill, { width: `${g.pct}%` as any, backgroundColor: g.color }]} />
+                                </View>
+                                <View style={styles.goalFooter}>
+                                    <Text style={styles.goalAmounts}>${g.current.toLocaleString()} / ${g.target.toLocaleString()}</Text>
+                                    <Text style={styles.goalDue}>{g.due}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    ))}
+
+                    <TouchableOpacity style={styles.viewAllBtn}>
+                        <Text style={styles.viewAllText}>View All Goals →</Text>
+                    </TouchableOpacity>
+                </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {GOALS.map((g, i) => (
-                    <View key={i} style={styles.goalCard}>
-                        <View style={[styles.goalIconBg, { backgroundColor: g.color + '15' }]}>
-                            <Ionicons name={g.icon} size={22} color={g.color} />
-                        </View>
-                        <View style={styles.goalBody}>
-                            <View style={styles.goalTitleRow}>
-                                <Text style={styles.goalLabel}>{g.label}</Text>
-                                <Text style={[styles.goalPct, { color: g.color }]}>{g.pct}%</Text>
-                            </View>
-                            <View style={styles.progressBg}>
-                                <View style={[styles.progressFill, { width: `${g.pct}%` as any, backgroundColor: g.color }]} />
-                            </View>
-                            <View style={styles.goalFooter}>
-                                <Text style={styles.goalAmounts}>${g.current.toLocaleString()} / ${g.target.toLocaleString()}</Text>
-                                <Text style={styles.goalDue}>{g.due}</Text>
-                            </View>
-                        </View>
-                    </View>
-                ))}
-
-                <TouchableOpacity style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View All Goals →</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </View>
+        </ScreenBackground>
     );
 }
 

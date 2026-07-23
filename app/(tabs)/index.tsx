@@ -21,6 +21,8 @@ const TRANSACTIONS = [
     { title: 'Freelance Project', sub: 'Income', amount: '+$650.00', date: 'Jul 18', type: 'in', icon: 'code-slash-outline' as IoniconsName },
 ];
 
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
+
 // Simple sparkline-like dots for balance card
 const SPARKLINE = [40, 55, 35, 65, 45, 70, 60, 80, 55, 90, 75, 95];
 
@@ -38,147 +40,149 @@ export default function HomeScreen() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <ScreenBackground>
+            <ScrollView style={styles.container} contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-            {/* ─── Header ─── */}
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <View style={styles.avatarSmall}>
-                        <Ionicons name="person" size={18} color={COLORS.primary} />
+                {/* ─── Header ─── */}
+                <View style={styles.header}>
+                    <View style={styles.headerLeft}>
+                        <View style={styles.avatarSmall}>
+                            <Ionicons name="person" size={18} color={COLORS.primary} />
+                        </View>
+                        <View>
+                            <Text style={styles.greeting}>Good morning,</Text>
+                            <Text style={styles.name}>Sam 👋</Text>
+                        </View>
                     </View>
-                    <View>
-                        <Text style={styles.greeting}>Good morning,</Text>
-                        <Text style={styles.name}>Sam 👋</Text>
-                    </View>
+                    <TouchableOpacity style={styles.notifBtn}>
+                        <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
+                        <View style={styles.notifDot} />
+                    </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.notifBtn}>
-                    <Ionicons name="notifications-outline" size={22} color={COLORS.text} />
-                    <View style={styles.notifDot} />
-                </TouchableOpacity>
-            </View>
 
-            {/* ─── Balance Card ─── */}
-            <View style={styles.balanceCard}>
-                <View style={styles.balanceTopRow}>
-                    <Text style={styles.balanceLabel}>Total Balance ✦</Text>
-                    <Ionicons name="eye-outline" size={18} color="rgba(255,255,255,0.7)" />
+                {/* ─── Balance Card ─── */}
+                <View style={styles.balanceCard}>
+                    <View style={styles.balanceTopRow}>
+                        <Text style={styles.balanceLabel}>Total Balance ✦</Text>
+                        <Ionicons name="eye-outline" size={18} color="rgba(255,255,255,0.7)" />
+                    </View>
+                    <Text style={styles.balanceAmount}>$12,560.50</Text>
+                    <View style={styles.balanceChangeRow}>
+                        <Ionicons name="trending-up" size={13} color={COLORS.success} />
+                        <Text style={styles.balanceChange}> 12.5% from last month</Text>
+                    </View>
+                    {/* Sparkline */}
+                    <View style={styles.sparkline}>
+                        {SPARKLINE.map((h, i) => (
+                            <View
+                                key={i}
+                                style={[
+                                    styles.sparkBar,
+                                    { height: h * 0.55, opacity: i === SPARKLINE.length - 1 ? 1 : 0.4 + (i / SPARKLINE.length) * 0.5 }
+                                ]}
+                            />
+                        ))}
+                    </View>
                 </View>
-                <Text style={styles.balanceAmount}>$12,560.50</Text>
-                <View style={styles.balanceChangeRow}>
-                    <Ionicons name="trending-up" size={13} color={COLORS.success} />
-                    <Text style={styles.balanceChange}> 12.5% from last month</Text>
-                </View>
-                {/* Sparkline */}
-                <View style={styles.sparkline}>
-                    {SPARKLINE.map((h, i) => (
-                        <View
-                            key={i}
-                            style={[
-                                styles.sparkBar,
-                                { height: h * 0.55, opacity: i === SPARKLINE.length - 1 ? 1 : 0.4 + (i / SPARKLINE.length) * 0.5 }
-                            ]}
-                        />
-                    ))}
-                </View>
-            </View>
 
-            {/* ─── Financial Summary ─── */}
-            <View style={styles.summaryRow}>
-                <View style={styles.summaryItem}>
-                    <View style={[styles.summaryIcon, { backgroundColor: 'rgba(22,163,74,0.1)' }]}>
-                        <Ionicons name="arrow-down-circle" size={16} color={COLORS.success} />
+                {/* ─── Financial Summary ─── */}
+                <View style={styles.summaryRow}>
+                    <View style={styles.summaryItem}>
+                        <View style={[styles.summaryIcon, { backgroundColor: 'rgba(22,163,74,0.1)' }]}>
+                            <Ionicons name="arrow-down-circle" size={16} color={COLORS.success} />
+                        </View>
+                        <Text style={styles.summaryLabel}>Income</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.success }]}>$5,850.00</Text>
                     </View>
-                    <Text style={styles.summaryLabel}>Income</Text>
-                    <Text style={[styles.summaryValue, { color: COLORS.success }]}>$5,850.00</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                    <View style={[styles.summaryIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-                        <Ionicons name="arrow-up-circle" size={16} color={COLORS.expense} />
+                    <View style={styles.summaryDivider} />
+                    <View style={styles.summaryItem}>
+                        <View style={[styles.summaryIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
+                            <Ionicons name="arrow-up-circle" size={16} color={COLORS.expense} />
+                        </View>
+                        <Text style={styles.summaryLabel}>Expenses</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.expense }]}>$3,240.50</Text>
                     </View>
-                    <Text style={styles.summaryLabel}>Expenses</Text>
-                    <Text style={[styles.summaryValue, { color: COLORS.expense }]}>$3,240.50</Text>
-                </View>
-                <View style={styles.summaryDivider} />
-                <View style={styles.summaryItem}>
-                    <View style={[styles.summaryIcon, { backgroundColor: 'rgba(66,133,244,0.1)' }]}>
-                        <Ionicons name="analytics" size={16} color={COLORS.primary} />
+                    <View style={styles.summaryDivider} />
+                    <View style={styles.summaryItem}>
+                        <View style={[styles.summaryIcon, { backgroundColor: 'rgba(66,133,244,0.1)' }]}>
+                            <Ionicons name="analytics" size={16} color={COLORS.primary} />
+                        </View>
+                        <Text style={styles.summaryLabel}>Cash Flow</Text>
+                        <Text style={[styles.summaryValue, { color: COLORS.primary }]}>$2,609.50</Text>
                     </View>
-                    <Text style={styles.summaryLabel}>Cash Flow</Text>
-                    <Text style={[styles.summaryValue, { color: COLORS.primary }]}>$2,609.50</Text>
                 </View>
-            </View>
 
-            {/* ─── Quick Actions ─── */}
-            <View style={styles.section}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
-                    <Text style={styles.sectionAction}>Edit</Text>
+                {/* ─── Quick Actions ─── */}
+                <View style={styles.section}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Quick Actions</Text>
+                        <Text style={styles.sectionAction}>Edit</Text>
+                    </View>
+                    <View style={styles.quickActionsRow}>
+                        {QUICK_ACTIONS.map((action, idx) => (
+                            <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => handleQuickAction(action.label)}>
+                                <View style={[styles.quickActionIcon, { backgroundColor: action.bg }]}>
+                                    <Ionicons name={action.icon} size={20} color={action.color} />
+                                </View>
+                                <Text style={styles.quickActionText}>{action.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
                 </View>
-                <View style={styles.quickActionsRow}>
-                    {QUICK_ACTIONS.map((action, idx) => (
-                        <TouchableOpacity key={idx} style={styles.quickActionBtn} onPress={() => handleQuickAction(action.label)}>
-                            <View style={[styles.quickActionIcon, { backgroundColor: action.bg }]}>
-                                <Ionicons name={action.icon} size={20} color={action.color} />
+
+                {/* ─── AI Insight ─── */}
+                <View style={styles.section}>
+                    <View style={styles.aiCard}>
+                        <View style={styles.aiHeaderRow}>
+                            <View style={styles.aiIconBg}>
+                                <Text style={{ fontSize: 14 }}>🤖</Text>
                             </View>
-                            <Text style={styles.quickActionText}>{action.label}</Text>
+                            <Text style={styles.aiTitle}>AI Insight</Text>
+                            <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>New</Text></View>
+                        </View>
+                        <Text style={styles.aiBody}>
+                            You spent 18% less on transportation this month. Great job! Keep it up.
+                        </Text>
+                        <TouchableOpacity style={styles.aiLinkRow} onPress={() => router.push('/assistant')}>
+                            <Text style={styles.aiLink}>See more insights →</Text>
                         </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* ─── Recent Transactions ─── */}
+                <View style={[styles.section, { paddingBottom: 120 }]}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>Recent Transactions</Text>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+                            <Text style={styles.sectionAction}>See all</Text>
+                        </TouchableOpacity>
+                    </View>
+                    {TRANSACTIONS.map((tx, idx) => (
+                        <View key={idx} style={styles.txItem}>
+                            <View style={[styles.txIconBg, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
+                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
+                            </View>
+                            <View style={styles.txDetails}>
+                                <Text style={styles.txTitle}>{tx.title}</Text>
+                                <Text style={styles.txSub}>{tx.sub}</Text>
+                            </View>
+                            <View style={styles.txAmountContainer}>
+                                <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>
+                                    {tx.amount}
+                                </Text>
+                                <Text style={styles.txDate}>{tx.date}</Text>
+                            </View>
+                        </View>
                     ))}
                 </View>
-            </View>
 
-            {/* ─── AI Insight ─── */}
-            <View style={styles.section}>
-                <View style={styles.aiCard}>
-                    <View style={styles.aiHeaderRow}>
-                        <View style={styles.aiIconBg}>
-                            <Text style={{ fontSize: 14 }}>🤖</Text>
-                        </View>
-                        <Text style={styles.aiTitle}>AI Insight</Text>
-                        <View style={styles.aiBadge}><Text style={styles.aiBadgeText}>New</Text></View>
-                    </View>
-                    <Text style={styles.aiBody}>
-                        You spent 18% less on transportation this month. Great job! Keep it up.
-                    </Text>
-                    <TouchableOpacity style={styles.aiLinkRow} onPress={() => router.push('/assistant')}>
-                        <Text style={styles.aiLink}>See more insights →</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-
-            {/* ─── Recent Transactions ─── */}
-            <View style={[styles.section, { paddingBottom: 120 }]}>
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Recent Transactions</Text>
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                        <Text style={styles.sectionAction}>See all</Text>
-                    </TouchableOpacity>
-                </View>
-                {TRANSACTIONS.map((tx, idx) => (
-                    <View key={idx} style={styles.txItem}>
-                        <View style={[styles.txIconBg, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                            <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
-                        </View>
-                        <View style={styles.txDetails}>
-                            <Text style={styles.txTitle}>{tx.title}</Text>
-                            <Text style={styles.txSub}>{tx.sub}</Text>
-                        </View>
-                        <View style={styles.txAmountContainer}>
-                            <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>
-                                {tx.amount}
-                            </Text>
-                            <Text style={styles.txDate}>{tx.date}</Text>
-                        </View>
-                    </View>
-                ))}
-            </View>
-
-        </ScrollView>
+            </ScrollView>
+        </ScreenBackground>
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: 'transparent' },
+    container: { flex: 1, backgroundColor: '#F4F7FB' },
     scroll: { paddingBottom: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },

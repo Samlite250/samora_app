@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -38,96 +39,98 @@ export default function WalletScreen() {
     const router = useRouter();
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Wallet</Text>
-                <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/(tabs)/add')}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-
-                {/* ─── My Wallets ─── */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>My Wallets</Text>
-                    <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                        <Text style={styles.seeAll}>See all</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Wallet</Text>
+                    <TouchableOpacity style={styles.addBtn} onPress={() => router.push('/(tabs)/add')}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
                 </View>
 
-                {WALLETS.map((w, i) => (
-                    <TouchableOpacity key={i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
-                        <View style={[styles.walletIconBg, { backgroundColor: w.color + '18' }]}>
-                            <Ionicons name={w.icon} size={20} color={w.color} />
-                        </View>
-                        <View style={styles.walletDetails}>
-                            <Text style={styles.walletName}>{w.name}</Text>
-                            <Text style={styles.walletAcc}>{w.acc}</Text>
-                        </View>
-                        <View style={styles.walletRight}>
-                            <Text style={[styles.walletAmount, { color: w.type === 'negative' ? COLORS.expense : COLORS.text }]}>
-                                {w.amount}
-                            </Text>
-                            <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
-                        </View>
-                    </TouchableOpacity>
-                ))}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                {/* ─── Activity Summary ─── */}
-                <View style={[styles.sectionHeader, { marginTop: SIZES.lg }]}>
-                    <Text style={styles.sectionTitle}>Activity Summary</Text>
-                    <View style={styles.periodPill}>
-                        <Text style={styles.periodText}>This Week</Text>
-                        <Ionicons name="chevron-down" size={12} color={COLORS.secondaryText} />
-                    </View>
-                </View>
-
-                <View style={styles.activityCard}>
-                    {/* Stats row */}
-                    <View style={styles.activityStatsRow}>
-                        <View style={styles.statItem}>
-                            <View style={[styles.statDot, { backgroundColor: COLORS.success }]} />
-                            <Text style={styles.statLabel}>Income</Text>
-                            <Text style={[styles.statValue, { color: COLORS.success }]}>$1,850.00</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <View style={[styles.statDot, { backgroundColor: COLORS.expense }]} />
-                            <Text style={styles.statLabel}>Expenses</Text>
-                            <Text style={[styles.statValue, { color: COLORS.expense }]}>$980.50</Text>
-                        </View>
+                    {/* ─── My Wallets ─── */}
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>My Wallets</Text>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+                            <Text style={styles.seeAll}>See all</Text>
+                        </TouchableOpacity>
                     </View>
 
-                    {/* Bar Chart */}
-                    <View style={styles.chart}>
-                        {ACTIVITY.map((d, i) => (
-                            <View key={i} style={styles.barGroup}>
-                                <View style={styles.bars}>
-                                    <View style={[styles.bar, { height: d.income * 0.8, backgroundColor: COLORS.primary }]} />
-                                    <View style={[styles.bar, { height: d.expense * 0.8, backgroundColor: '#F9A8A8' }]} />
-                                </View>
-                                <Text style={styles.barLabel}>{d.day}</Text>
+                    {WALLETS.map((w, i) => (
+                        <TouchableOpacity key={i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
+                            <View style={[styles.walletIconBg, { backgroundColor: w.color + '18' }]}>
+                                <Ionicons name={w.icon} size={20} color={w.color} />
                             </View>
-                        ))}
+                            <View style={styles.walletDetails}>
+                                <Text style={styles.walletName}>{w.name}</Text>
+                                <Text style={styles.walletAcc}>{w.acc}</Text>
+                            </View>
+                            <View style={styles.walletRight}>
+                                <Text style={[styles.walletAmount, { color: w.type === 'negative' ? COLORS.expense : COLORS.text }]}>
+                                    {w.amount}
+                                </Text>
+                                <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
+                            </View>
+                        </TouchableOpacity>
+                    ))}
+
+                    {/* ─── Activity Summary ─── */}
+                    <View style={[styles.sectionHeader, { marginTop: SIZES.lg }]}>
+                        <Text style={styles.sectionTitle}>Activity Summary</Text>
+                        <View style={styles.periodPill}>
+                            <Text style={styles.periodText}>This Week</Text>
+                            <Ionicons name="chevron-down" size={12} color={COLORS.secondaryText} />
+                        </View>
                     </View>
 
-                    {/* Legend */}
-                    <View style={styles.chartLegend}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
-                            <Text style={styles.legendText}>Income</Text>
+                    <View style={styles.activityCard}>
+                        {/* Stats row */}
+                        <View style={styles.activityStatsRow}>
+                            <View style={styles.statItem}>
+                                <View style={[styles.statDot, { backgroundColor: COLORS.success }]} />
+                                <Text style={styles.statLabel}>Income</Text>
+                                <Text style={[styles.statValue, { color: COLORS.success }]}>$1,850.00</Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                                <View style={[styles.statDot, { backgroundColor: COLORS.expense }]} />
+                                <Text style={styles.statLabel}>Expenses</Text>
+                                <Text style={[styles.statValue, { color: COLORS.expense }]}>$980.50</Text>
+                            </View>
                         </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#F9A8A8' }]} />
-                            <Text style={styles.legendText}>Expenses</Text>
+
+                        {/* Bar Chart */}
+                        <View style={styles.chart}>
+                            {ACTIVITY.map((d, i) => (
+                                <View key={i} style={styles.barGroup}>
+                                    <View style={styles.bars}>
+                                        <View style={[styles.bar, { height: d.income * 0.8, backgroundColor: COLORS.primary }]} />
+                                        <View style={[styles.bar, { height: d.expense * 0.8, backgroundColor: '#F9A8A8' }]} />
+                                    </View>
+                                    <Text style={styles.barLabel}>{d.day}</Text>
+                                </View>
+                            ))}
+                        </View>
+
+                        {/* Legend */}
+                        <View style={styles.chartLegend}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+                                <Text style={styles.legendText}>Income</Text>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: '#F9A8A8' }]} />
+                                <Text style={styles.legendText}>Expenses</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-            </ScrollView>
-        </View>
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 const METRICS = [
@@ -12,56 +13,58 @@ const METRICS = [
 
 export default function FinancialHealthScreen() {
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Financial Health</Text>
-                <TouchableOpacity>
-                    <Ionicons name="information-circle-outline" size={22} color={COLORS.secondaryText} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-                {/* Score Circle */}
-                <View style={styles.scoreCard}>
-                    <View style={styles.scoreCircle}>
-                        <View style={styles.scoreInner}>
-                            <Text style={styles.scoreNum}>78</Text>
-                            <Text style={styles.scoreDenom}>/100</Text>
-                        </View>
-                    </View>
-                    <View style={[styles.scoreBadge, { backgroundColor: 'rgba(22,163,74,0.12)' }]}>
-                        <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-                        <Text style={[styles.scoreBadgeText, { color: COLORS.success }]}>Good</Text>
-                    </View>
-                    <Text style={styles.scoreSubtitle}>You are on the right track!</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Financial Health</Text>
+                    <TouchableOpacity>
+                        <Ionicons name="information-circle-outline" size={22} color={COLORS.secondaryText} />
+                    </TouchableOpacity>
                 </View>
 
-                {/* Metrics */}
-                <View style={styles.metricsCard}>
-                    {METRICS.map((m, i) => (
-                        <View key={i} style={[styles.metricRow, i < METRICS.length - 1 && styles.metricBorder]}>
-                            <Ionicons name={m.icon as any} size={18} color={m.color} />
-                            <View style={styles.metricBody}>
-                                <View style={styles.metricTitleRow}>
-                                    <Text style={styles.metricLabel}>{m.label}</Text>
-                                    <Text style={[styles.metricVal, { color: m.color }]}>{m.value}/100</Text>
-                                </View>
-                                <View style={styles.progressBg}>
-                                    <View style={[styles.progressFill, { width: `${m.value}%` as any, backgroundColor: m.color }]} />
-                                </View>
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+                    {/* Score Circle */}
+                    <View style={styles.scoreCard}>
+                        <View style={styles.scoreCircle}>
+                            <View style={styles.scoreInner}>
+                                <Text style={styles.scoreNum}>78</Text>
+                                <Text style={styles.scoreDenom}>/100</Text>
                             </View>
                         </View>
-                    ))}
-                </View>
+                        <View style={[styles.scoreBadge, { backgroundColor: 'rgba(22,163,74,0.12)' }]}>
+                            <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                            <Text style={[styles.scoreBadgeText, { color: COLORS.success }]}>Good</Text>
+                        </View>
+                        <Text style={styles.scoreSubtitle}>You are on the right track!</Text>
+                    </View>
 
-                <TouchableOpacity style={styles.detailBtn}>
-                    <Text style={styles.detailText}>View Detailed Report →</Text>
-                </TouchableOpacity>
+                    {/* Metrics */}
+                    <View style={styles.metricsCard}>
+                        {METRICS.map((m, i) => (
+                            <View key={i} style={[styles.metricRow, i < METRICS.length - 1 && styles.metricBorder]}>
+                                <Ionicons name={m.icon as any} size={18} color={m.color} />
+                                <View style={styles.metricBody}>
+                                    <View style={styles.metricTitleRow}>
+                                        <Text style={styles.metricLabel}>{m.label}</Text>
+                                        <Text style={[styles.metricVal, { color: m.color }]}>{m.value}/100</Text>
+                                    </View>
+                                    <View style={styles.progressBg}>
+                                        <View style={[styles.progressFill, { width: `${m.value}%` as any, backgroundColor: m.color }]} />
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
 
-            </ScrollView>
-        </View>
+                    <TouchableOpacity style={styles.detailBtn}>
+                        <Text style={styles.detailText}>View Detailed Report →</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 const INCOME_DATA = [22, 40, 18, 50, 30, 62, 45, 70, 55, 40, 68, 85];
@@ -8,83 +9,85 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 
 export default function ReportsScreen() {
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Reports</Text>
-                <TouchableOpacity>
-                    <Ionicons name="download-outline" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {/* Period Selector */}
-                <TouchableOpacity style={styles.periodPill}>
-                    <Text style={styles.periodText}>This Month</Text>
-                    <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
-                </TouchableOpacity>
-
-                {/* Summary Row */}
-                <View style={styles.summaryRow}>
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Total Income</Text>
-                        <Text style={[styles.summaryVal, { color: COLORS.success }]}>$5,850.00</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Total Expenses</Text>
-                        <Text style={[styles.summaryVal, { color: COLORS.expense }]}>$3,240.50</Text>
-                    </View>
-                    <View style={styles.summaryDivider} />
-                    <View style={styles.summaryItem}>
-                        <Text style={styles.summaryLabel}>Net Cash Flow</Text>
-                        <Text style={[styles.summaryVal, { color: COLORS.primary }]}>$2,609.50</Text>
-                    </View>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Reports</Text>
+                    <TouchableOpacity>
+                        <Ionicons name="download-outline" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
                 </View>
 
-                {/* Income vs Expenses Chart */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>Income vs Expenses</Text>
-                    <View style={styles.chart}>
-                        {INCOME_DATA.map((inc, i) => {
-                            const exp = EXPENSE_DATA[i];
-                            const maxH = 80;
-                            return (
-                                <View key={i} style={styles.barGroup}>
-                                    <View style={styles.bars}>
-                                        <View style={[styles.bar, { height: (inc / 90) * maxH, backgroundColor: COLORS.primary }]} />
-                                        <View style={[styles.bar, { height: (exp / 90) * maxH, backgroundColor: '#FDA4A4' }]} />
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    {/* Period Selector */}
+                    <TouchableOpacity style={styles.periodPill}>
+                        <Text style={styles.periodText}>This Month</Text>
+                        <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
+                    </TouchableOpacity>
+
+                    {/* Summary Row */}
+                    <View style={styles.summaryRow}>
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Total Income</Text>
+                            <Text style={[styles.summaryVal, { color: COLORS.success }]}>$5,850.00</Text>
+                        </View>
+                        <View style={styles.summaryDivider} />
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Total Expenses</Text>
+                            <Text style={[styles.summaryVal, { color: COLORS.expense }]}>$3,240.50</Text>
+                        </View>
+                        <View style={styles.summaryDivider} />
+                        <View style={styles.summaryItem}>
+                            <Text style={styles.summaryLabel}>Net Cash Flow</Text>
+                            <Text style={[styles.summaryVal, { color: COLORS.primary }]}>$2,609.50</Text>
+                        </View>
+                    </View>
+
+                    {/* Income vs Expenses Chart */}
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Income vs Expenses</Text>
+                        <View style={styles.chart}>
+                            {INCOME_DATA.map((inc, i) => {
+                                const exp = EXPENSE_DATA[i];
+                                const maxH = 80;
+                                return (
+                                    <View key={i} style={styles.barGroup}>
+                                        <View style={styles.bars}>
+                                            <View style={[styles.bar, { height: (inc / 90) * maxH, backgroundColor: COLORS.primary }]} />
+                                            <View style={[styles.bar, { height: (exp / 90) * maxH, backgroundColor: '#FDA4A4' }]} />
+                                        </View>
+                                        <Text style={styles.monthLabel}>{i % 3 === 0 ? MONTHS[i] : ''}</Text>
                                     </View>
-                                    <Text style={styles.monthLabel}>{i % 3 === 0 ? MONTHS[i] : ''}</Text>
-                                </View>
-                            );
-                        })}
-                    </View>
-                    <View style={styles.legend}>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
-                            <Text style={styles.legendText}>Income</Text>
+                                );
+                            })}
                         </View>
-                        <View style={styles.legendItem}>
-                            <View style={[styles.legendDot, { backgroundColor: '#FDA4A4' }]} />
-                            <Text style={styles.legendText}>Expenses</Text>
+                        <View style={styles.legend}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: COLORS.primary }]} />
+                                <Text style={styles.legendText}>Income</Text>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendDot, { backgroundColor: '#FDA4A4' }]} />
+                                <Text style={styles.legendText}>Expenses</Text>
+                            </View>
                         </View>
                     </View>
-                </View>
 
-                {/* Export Buttons */}
-                <View style={styles.exportRow}>
-                    <TouchableOpacity style={styles.exportBtn}>
-                        <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
-                        <Text style={styles.exportText}>Export PDF</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.exportBtn, { borderColor: COLORS.success }]}>
-                        <Ionicons name="grid-outline" size={18} color={COLORS.success} />
-                        <Text style={[styles.exportText, { color: COLORS.success }]}>Export Excel</Text>
-                    </TouchableOpacity>
-                </View>
-            </ScrollView>
-        </View>
+                    {/* Export Buttons */}
+                    <View style={styles.exportRow}>
+                        <TouchableOpacity style={styles.exportBtn}>
+                            <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
+                            <Text style={styles.exportText}>Export PDF</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.exportBtn, { borderColor: COLORS.success }]}>
+                            <Ionicons name="grid-outline" size={18} color={COLORS.success} />
+                            <Text style={[styles.exportText, { color: COLORS.success }]}>Export Excel</Text>
+                        </TouchableOpacity>
+                    </View>
+                </ScrollView>
+            </View>
+        </ScreenBackground>
     );
 }
 

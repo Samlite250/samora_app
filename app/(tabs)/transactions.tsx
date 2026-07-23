@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -23,73 +24,75 @@ export default function TransactionsScreen() {
     const [search, setSearch] = useState('');
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Transactions</Text>
-                <TouchableOpacity style={styles.addBtn}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
-            </View>
-
-            {/* Search Bar */}
-            <View style={styles.searchWrap}>
-                <Ionicons name="search-outline" size={18} color={COLORS.secondaryText} style={{ marginLeft: 12 }} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search transactions..."
-                    placeholderTextColor={COLORS.secondaryText}
-                    value={search}
-                    onChangeText={setSearch}
-                />
-            </View>
-
-            {/* Filter tabs */}
-            <View style={styles.filterRow}>
-                {FILTERS.map(f => (
-                    <TouchableOpacity key={f} style={[styles.filterTab, activeFilter === f && styles.filterTabActive]} onPress={() => setActiveFilter(f)}>
-                        <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>{f}</Text>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Transactions</Text>
+                    <TouchableOpacity style={styles.addBtn}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
-                ))}
+                </View>
+
+                {/* Search Bar */}
+                <View style={styles.searchWrap}>
+                    <Ionicons name="search-outline" size={18} color={COLORS.secondaryText} style={{ marginLeft: 12 }} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search transactions..."
+                        placeholderTextColor={COLORS.secondaryText}
+                        value={search}
+                        onChangeText={setSearch}
+                    />
+                </View>
+
+                {/* Filter tabs */}
+                <View style={styles.filterRow}>
+                    {FILTERS.map(f => (
+                        <TouchableOpacity key={f} style={[styles.filterTab, activeFilter === f && styles.filterTabActive]} onPress={() => setActiveFilter(f)}>
+                            <Text style={[styles.filterText, activeFilter === f && styles.filterTextActive]}>{f}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    {/* Today */}
+                    <Text style={styles.groupLabel}>Today</Text>
+                    {TODAY_TXS.map((tx, i) => (
+                        <TouchableOpacity key={i} style={styles.txItem}>
+                            <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
+                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
+                            </View>
+                            <View style={styles.txDetails}>
+                                <Text style={styles.txTitle}>{tx.title}</Text>
+                                <Text style={styles.txSub}>{tx.sub}</Text>
+                            </View>
+                            <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
+                        </TouchableOpacity>
+                    ))}
+
+                    {/* Yesterday */}
+                    <Text style={styles.groupLabel}>Yesterday</Text>
+                    {YESTERDAY_TXS.map((tx, i) => (
+                        <TouchableOpacity key={i} style={styles.txItem}>
+                            <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
+                                <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
+                            </View>
+                            <View style={styles.txDetails}>
+                                <Text style={styles.txTitle}>{tx.title}</Text>
+                                <Text style={styles.txSub}>{tx.sub}</Text>
+                            </View>
+                            <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
+                        </TouchableOpacity>
+                    ))}
+
+                    <TouchableOpacity style={styles.viewAllBtn}>
+                        <Text style={styles.viewAllText}>View All Transactions</Text>
+                    </TouchableOpacity>
+
+                </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {/* Today */}
-                <Text style={styles.groupLabel}>Today</Text>
-                {TODAY_TXS.map((tx, i) => (
-                    <TouchableOpacity key={i} style={styles.txItem}>
-                        <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                            <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
-                        </View>
-                        <View style={styles.txDetails}>
-                            <Text style={styles.txTitle}>{tx.title}</Text>
-                            <Text style={styles.txSub}>{tx.sub}</Text>
-                        </View>
-                        <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
-                    </TouchableOpacity>
-                ))}
-
-                {/* Yesterday */}
-                <Text style={styles.groupLabel}>Yesterday</Text>
-                {YESTERDAY_TXS.map((tx, i) => (
-                    <TouchableOpacity key={i} style={styles.txItem}>
-                        <View style={[styles.txIcon, { backgroundColor: tx.type === 'in' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.08)' }]}>
-                            <Ionicons name={tx.icon} size={20} color={tx.type === 'in' ? COLORS.success : COLORS.expense} />
-                        </View>
-                        <View style={styles.txDetails}>
-                            <Text style={styles.txTitle}>{tx.title}</Text>
-                            <Text style={styles.txSub}>{tx.sub}</Text>
-                        </View>
-                        <Text style={[styles.txAmount, { color: tx.type === 'in' ? COLORS.success : COLORS.expense }]}>{tx.amount}</Text>
-                    </TouchableOpacity>
-                ))}
-
-                <TouchableOpacity style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View All Transactions</Text>
-                </TouchableOpacity>
-
-            </ScrollView>
-        </View>
+        </ScreenBackground>
     );
 }
 

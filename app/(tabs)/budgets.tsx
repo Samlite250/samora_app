@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -16,48 +17,50 @@ const BUDGETS = [
 
 export default function BudgetsScreen() {
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <Text style={styles.headerTitle}>Budgets</Text>
-                <TouchableOpacity style={styles.addBtn}>
-                    <Ionicons name="add" size={22} color={COLORS.primary} />
-                </TouchableOpacity>
+        <ScreenBackground>
+            <View style={styles.container}>
+                {/* Header */}
+                <View style={styles.header}>
+                    <Text style={styles.headerTitle}>Budgets</Text>
+                    <TouchableOpacity style={styles.addBtn}>
+                        <Ionicons name="add" size={22} color={COLORS.primary} />
+                    </TouchableOpacity>
+                </View>
+
+                <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+                    {/* Period Selector */}
+                    <TouchableOpacity style={styles.periodPill}>
+                        <Text style={styles.periodText}>May 2024</Text>
+                        <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
+                    </TouchableOpacity>
+
+                    {BUDGETS.map((b, i) => (
+                        <View key={i} style={styles.budgetCard}>
+                            <View style={[styles.budgetIcon, { backgroundColor: b.color + '15' }]}>
+                                <Ionicons name={b.icon} size={20} color={b.color} />
+                            </View>
+                            <View style={styles.budgetBody}>
+                                <View style={styles.budgetTitleRow}>
+                                    <Text style={styles.budgetLabel}>{b.label}</Text>
+                                    <Text style={[styles.budgetPct, { color: b.pct >= 80 ? COLORS.expense : COLORS.text }]}>{b.pct}%</Text>
+                                </View>
+                                <View style={styles.progressBg}>
+                                    <View style={[styles.progressFill, {
+                                        width: `${b.pct}%` as any,
+                                        backgroundColor: b.pct >= 80 ? COLORS.expense : b.color
+                                    }]} />
+                                </View>
+                                <Text style={styles.budgetAmounts}>${b.spent.toLocaleString()} / ${b.total.toLocaleString()}</Text>
+                            </View>
+                        </View>
+                    ))}
+
+                    <TouchableOpacity style={styles.viewAllBtn}>
+                        <Text style={styles.viewAllText}>View All Budgets →</Text>
+                    </TouchableOpacity>
+                </ScrollView>
             </View>
-
-            <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                {/* Period Selector */}
-                <TouchableOpacity style={styles.periodPill}>
-                    <Text style={styles.periodText}>May 2024</Text>
-                    <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
-                </TouchableOpacity>
-
-                {BUDGETS.map((b, i) => (
-                    <View key={i} style={styles.budgetCard}>
-                        <View style={[styles.budgetIcon, { backgroundColor: b.color + '15' }]}>
-                            <Ionicons name={b.icon} size={20} color={b.color} />
-                        </View>
-                        <View style={styles.budgetBody}>
-                            <View style={styles.budgetTitleRow}>
-                                <Text style={styles.budgetLabel}>{b.label}</Text>
-                                <Text style={[styles.budgetPct, { color: b.pct >= 80 ? COLORS.expense : COLORS.text }]}>{b.pct}%</Text>
-                            </View>
-                            <View style={styles.progressBg}>
-                                <View style={[styles.progressFill, {
-                                    width: `${b.pct}%` as any,
-                                    backgroundColor: b.pct >= 80 ? COLORS.expense : b.color
-                                }]} />
-                            </View>
-                            <Text style={styles.budgetAmounts}>${b.spent.toLocaleString()} / ${b.total.toLocaleString()}</Text>
-                        </View>
-                    </View>
-                ))}
-
-                <TouchableOpacity style={styles.viewAllBtn}>
-                    <Text style={styles.viewAllText}>View All Budgets →</Text>
-                </TouchableOpacity>
-            </ScrollView>
-        </View>
+        </ScreenBackground>
     );
 }
 
