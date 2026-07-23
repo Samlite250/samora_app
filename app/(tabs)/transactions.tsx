@@ -29,7 +29,7 @@ export default function TransactionsScreen() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     const { formatAmount } = useCurrencyStore();
-    const { transactions: allTransactions } = useAppDataStore();
+    const { transactions: allTransactions, deleteTransaction } = useAppDataStore();
 
     const filteredTransactions = allTransactions.filter((tx: any) => {
         const matchesFilter = activeFilter === 'All' || tx.type.toLowerCase() === activeFilter.toLowerCase();
@@ -91,9 +91,17 @@ export default function TransactionsScreen() {
                                         <Text style={styles.txTitle}>{tx.title}</Text>
                                         <Text style={styles.txSub}>{tx.wallet_name || tx.wallets?.name || 'Wallet'} • {formatDate(tx.date)}</Text>
                                     </View>
-                                    <Text style={[styles.txAmount, { color }]}>
-                                        {prefix}{formatAmount(Math.abs(amountRwf))}
-                                    </Text>
+                                    <View style={{ alignItems: 'flex-end', flexDirection: 'row', gap: 8 }}>
+                                        <Text style={[styles.txAmount, { color }]}>
+                                            {prefix}{formatAmount(Math.abs(amountRwf))}
+                                        </Text>
+                                        <TouchableOpacity
+                                            onPress={() => deleteTransaction(tx.id)}
+                                            style={{ padding: 4 }}
+                                        >
+                                            <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
+                                        </TouchableOpacity>
+                                    </View>
                                 </View>
                             );
                         })

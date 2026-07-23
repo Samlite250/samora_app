@@ -17,7 +17,7 @@ const MONTH_NAMES = [
 export default function PlannerScreen() {
     const router = useRouter();
     const { formatAmount } = useCurrencyStore();
-    const { bills, markBillPaid } = useAppDataStore();
+    const { bills, markBillPaid, deleteBill } = useAppDataStore();
     const [isAddBillOpen, setIsAddBillOpen] = useState(false);
 
 
@@ -304,8 +304,13 @@ export default function PlannerScreen() {
                                     <View style={styles.eventBody}>
                                         <View style={styles.eventTitleRow}>
                                             <Text style={styles.eventTitle}>{evt.title}</Text>
-                                            <View style={[styles.eventTag, { backgroundColor: color + '15' }]}>
-                                                <Text style={[styles.eventTagText, { color }]}>{tagText}</Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                                <View style={[styles.eventTag, { backgroundColor: color + '15' }]}>
+                                                    <Text style={[styles.eventTagText, { color }]}>{tagText}</Text>
+                                                </View>
+                                                <TouchableOpacity onPress={() => deleteBill(evt.id)} style={{ padding: 4 }}>
+                                                    <Ionicons name="trash-outline" size={16} color={COLORS.expense} />
+                                                </TouchableOpacity>
                                             </View>
                                         </View>
                                         <View style={styles.eventTimeRow}>

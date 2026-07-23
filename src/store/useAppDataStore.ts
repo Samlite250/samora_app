@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { supabase } from '../data/api/supabase';
 import {
     BillRecord,
     BudgetRecord,
@@ -24,11 +23,20 @@ interface AppDataState {
 
     // Actions
     addTransaction: (tx: Omit<TransactionRecord, 'id'>) => Promise<void>;
+    deleteTransaction: (id: string) => Promise<void>;
+    editTransaction: (id: string, updated: Partial<TransactionRecord>) => Promise<void>;
     addBill: (bill: Omit<BillRecord, 'id' | 'is_paid'>) => Promise<void>;
+    deleteBill: (id: string) => Promise<void>;
+    editBill: (id: string, updated: Partial<BillRecord>) => Promise<void>;
     markBillPaid: (billId: string) => Promise<void>;
     addBudget: (budget: Omit<BudgetRecord, 'id' | 'spent' | 'pct'>) => Promise<void>;
+    deleteBudget: (id: string) => Promise<void>;
+    editBudget: (id: string, updated: Partial<BudgetRecord>) => Promise<void>;
     addGoal: (goal: Omit<GoalRecord, 'id' | 'current_amount'>) => Promise<void>;
+    deleteGoal: (id: string) => Promise<void>;
+    editGoal: (id: string, updated: Partial<GoalRecord>) => Promise<void>;
     depositGoal: (goalId: string, amount: number) => Promise<void>;
+    deleteWallet: (id: string) => Promise<void>;
 }
 
 export const useAppDataStore = create<AppDataState>()(
@@ -54,10 +62,7 @@ export const useAppDataStore = create<AppDataState>()(
                     notes: newTx.notes,
                 };
 
-                // 1. Update transactions list
                 const updatedTxs = [txItem, ...get().transactions];
-
-                // 2. Update wallet balance automatically
                 const updatedWallets = get().wallets.map((w) => {
                     if (w.name === txItem.wallet_name || w.id === txItem.wallet_id) {
                         const change = txItem.type === 'income' ? txItem.amount : txItem.type === 'expense' ? -txItem.amount : 0;
@@ -66,7 +71,6 @@ export const useAppDataStore = create<AppDataState>()(
                     return w;
                 });
 
-                // 3. Update budget spending if expense
                 const updatedBudgets = get().budgets.map((b) => {
                     if (txItem.type === 'expense' && b.category.toLowerCase().includes(txItem.category.toLowerCase())) {
                         const newSpent = b.spent + txItem.amount;
@@ -80,32 +84,34 @@ export const useAppDataStore = create<AppDataState>()(
                     wallets: updatedWallets,
                     budgets: updatedBudgets,
                 });
+            },
 
-                // 4. Try Syncing to Supabase
-                if (supabase) {
-                    try {
-                        await supabase.from('transactions').insert([{
-                            title: txItem.title,
-                            type: txItem.type,
-                            amount: txItem.amount,
-                            category: txItem.category,
-                            wallet_name: txItem.wallet_name,
-                            date: txItem.date,
-                        }]);
-                    } catch (e) { }
-                }
+            deleteTransaction: async (id: string) => {
+                set({ transactions: get().transactions.filter((tx) => tx.id !== id) });
+            },
+
+            editTransaction: async (id: string, updated: Partial<TransactionRecord>) => {
+                set({
+                    transactions: get().transactions.map((tx) =>
+                        tx.id === id ? { ...tx, ...updated } : tx
+                    ),
+                });
             },
 
             addBill: async (newBill) => {
                 const id = `bill_${Date.now()}`;
                 const billItem: BillRecord = { ...newBill, id, is_paid: false };
                 set({ bills: [...get().bills, billItem] });
+            },
 
-                if (supabase) {
-                    try {
-                        await supabase.from('bills').insert([billItem]);
-                    } catch (e) { }
-                }
+            deleteBill: async (id: string) => {
+                set({ bills: get().bills.filter((b) => b.id !== id) });
+            },
+
+            editBill: async (id: string, updated: Partial<BillRecord>) => {
+                set({
+                    bills: get().bills.map((b) => (b.id === id ? { ...b, ...updated } : b)),
+                });
             },
 
             markBillPaid: async (billId) => {
@@ -116,7 +122,6 @@ export const useAppDataStore = create<AppDataState>()(
                     b.id === billId ? { ...b, is_paid: true } : b
                 );
 
-                // Auto-deduct from main wallet as expense
                 const targetWallet = get().wallets[0];
                 const updatedWallets = get().wallets.map((w, idx) =>
                     idx === 0 ? { ...w, balance: Math.max(0, w.balance - targetBill.amount) } : w
@@ -146,10 +151,30 @@ export const useAppDataStore = create<AppDataState>()(
                 set({ budgets: [...get().budgets, item] });
             },
 
+            deleteBudget: async (id: string) => {
+                set({ budgets: get().budgets.filter((b) => b.id !== id) });
+            },
+
+            editBudget: async (id: string, updated: Partial<BudgetRecord>) => {
+                set({
+                    budgets: get().budgets.map((b) => (b.id === id ? { ...b, ...updated } : b)),
+                });
+            },
+
             addGoal: async (newGoal) => {
                 const id = `goal_${Date.now()}`;
                 const item: GoalRecord = { ...newGoal, id, current_amount: 0 };
                 set({ goals: [...get().goals, item] });
+            },
+
+            deleteGoal: async (id: string) => {
+                set({ goals: get().goals.filter((g) => g.id !== id) });
+            },
+
+            editGoal: async (id: string, updated: Partial<GoalRecord>) => {
+                set({
+                    goals: get().goals.map((g) => (g.id === id ? { ...g, ...updated } : g)),
+                });
             },
 
             depositGoal: async (goalId, amount) => {
@@ -157,6 +182,10 @@ export const useAppDataStore = create<AppDataState>()(
                     g.id === goalId ? { ...g, current_amount: Math.min(g.target_amount, g.current_amount + amount) } : g
                 );
                 set({ goals: updatedGoals });
+            },
+
+            deleteWallet: async (id: string) => {
+                set({ wallets: get().wallets.filter((w) => w.id !== id) });
             },
         }),
         {

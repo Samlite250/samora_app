@@ -49,12 +49,13 @@ export default function RegisterScreen() {
 
         setLoading(false);
 
-        // Update persistent user profile & sign in
+        // Save registered profile info (without auto-login session)
         await useAuthStore.getState().updateProfile({ fullName, email });
-        useAuthStore.setState({ isAuthenticated: true });
+        useAuthStore.setState({ isAuthenticated: false });
 
-        // Navigate immediately for cross-platform (Web & Mobile) compatibility
-        router.replace('/(tabs)');
+        // Redirect user to Login screen as requested
+        Alert.alert('Account Created', `Registration successful for ${firstName}! Please log in with your credentials.`);
+        router.replace('/auth/login');
     };
 
     return (
