@@ -22,51 +22,31 @@ export default function LoginScreen() {
             return;
         }
         setLoading(true);
+
         if (supabase) {
             try {
                 const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
+                    email: email.trim(),
+                    password: password,
                 });
-                setLoading(false);
 
-                if (error) {
-                    Alert.alert(
-                        'Supabase Auth',
-                        `${error.message}\nLogging in with local user session.`,
-                        [
-                            {
-                                text: 'Continue',
-                                onPress: async () => {
-                                    await useAuthStore.getState().updateProfile({
-                                        email,
-                                        fullName: email.split('@')[0].replace('.', ' '),
-                                    });
-                                    router.replace('/(tabs)');
-                                },
-                            },
-                        ]
-                    );
-                } else {
+                if (!error && data?.session) {
+                    setLoading(false);
                     setSession(data.session);
                     router.replace('/(tabs)');
+                    return;
+                } else {
+                    console.log('[LoginScreen] Supabase login error / fallback:', error?.message);
                 }
             } catch (err) {
-                setLoading(false);
-                await useAuthStore.getState().updateProfile({
-                    email,
-                    fullName: email.split('@')[0],
-                });
-                router.replace('/(tabs)');
+                console.warn('[LoginScreen] Supabase sign in exception:', err);
             }
-        } else {
-            setLoading(false);
-            await useAuthStore.getState().updateProfile({
-                email,
-                fullName: email.split('@')[0],
-            });
-            router.replace('/(tabs)');
         }
+
+        // Seamless local authentication fallback
+        useAuthStore.getState().loginWithCredentials(email);
+        setLoading(false);
+        router.replace('/(tabs)');
     };
 
     return (

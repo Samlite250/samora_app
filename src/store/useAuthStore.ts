@@ -20,16 +20,25 @@ const DEFAULT_PROFILE: UserProfile = {
     phone: '+250 78 812 3456',
 };
 
+export interface RegisteredUser {
+    fullName: string;
+    email: string;
+    password?: string;
+}
+
 interface AuthState {
     user: User | null;
     session: Session | null;
     profile: UserProfile;
+    registeredUsers: Record<string, RegisteredUser>;
     isLoading: boolean;
     isAuthenticated: boolean;
 
     // Actions
     setSession: (session: Session | null) => void;
     setProfile: (profile: Partial<UserProfile>) => void;
+    registerUserAccount: (data: RegisteredUser) => void;
+    loginWithCredentials: (email: string) => boolean;
     updateProfile: (data: { fullName?: string; phone?: string; email?: string }) => Promise<void>;
     signOut: () => Promise<void>;
 }
@@ -40,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             session: null,
             profile: DEFAULT_PROFILE,
+            registeredUsers: {},
             isLoading: false,
             isAuthenticated: true, // Default true for instant demo access, updated on session change
 
@@ -69,7 +79,7 @@ export const useAuthStore = create<AuthState>()(
                     session,
                     user,
                     profile: updatedProfile,
-                    isAuthenticated: !!session || true,
+                    isAuthenticated: true,
                     isLoading: false,
                 });
             },
@@ -78,6 +88,71 @@ export const useAuthStore = create<AuthState>()(
                 const current = get().profile;
                 const updated = { ...current, ...newProfileData };
                 set({ profile: updated });
+            },
+
+            registerUserAccount: (data) => {
+                const key = data.email.toLowerCase().trim();
+                const users = get().registeredUsers || {};
+                const nameParts = data.fullName.trim().split(' ');
+                const firstName = nameParts[0] || 'User';
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                const newUsers = {
+                    ...users,
+                    [key]: {
+                        fullName: data.fullName,
+                        email: data.email,
+                        password: data.password,
+                    },
+                };
+
+                const newProfile: UserProfile = {
+                    firstName,
+                    lastName,
+                    fullName: data.fullName,
+                    email: data.email,
+                    phone: get().profile.phone || '+250 780 000 000',
+                };
+
+                set({ registeredUsers: newUsers, profile: newProfile });
+            },
+
+            loginWithCredentials: (email) => {
+                const key = email.toLowerCase().trim();
+                const users = get().registeredUsers || {};
+                const found = users[key];
+
+                if (found) {
+                    const nameParts = found.fullName.trim().split(' ');
+                    const firstName = nameParts[0] || 'User';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+
+                    set({
+                        isAuthenticated: true,
+                        profile: {
+                            firstName,
+                            lastName,
+                            fullName: found.fullName,
+                            email: found.email,
+                            phone: get().profile.phone || '+250 780 000 000',
+                        },
+                    });
+                    return true;
+                }
+
+                // If not in registry, construct account dynamically from email
+                const dynamicName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                set({
+                    isAuthenticated: true,
+                    profile: {
+                        firstName: dynamicName.split(' ')[0] || 'User',
+                        lastName: dynamicName.split(' ').slice(1).join(' ') || '',
+                        fullName: dynamicName,
+                        email: email,
+                        phone: get().profile.phone || '+250 780 000 000',
+                    },
+                });
+                return true;
             },
 
             updateProfile: async (data) => {
@@ -132,7 +207,7 @@ export const useAuthStore = create<AuthState>()(
         {
             name: 'samora_auth_store',
             storage: createJSONStorage(() => AsyncStorage),
-            partialize: (state) => ({ profile: state.profile, isAuthenticated: state.isAuthenticated }),
+            partialize: (state) => ({ profile: state.profile, isAuthenticated: state.isAuthenticated, registeredUsers: state.registeredUsers }),
         }
     )
 );

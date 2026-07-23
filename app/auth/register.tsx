@@ -47,11 +47,15 @@ export default function RegisterScreen() {
             }
         }
 
-        setLoading(false);
-
-        // Save registered profile info (without auto-login session)
-        await useAuthStore.getState().updateProfile({ fullName, email });
+        // Register user locally in auth store registry
+        useAuthStore.getState().registerUserAccount({
+            fullName,
+            email,
+            password,
+        });
         useAuthStore.setState({ isAuthenticated: false });
+
+        setLoading(false);
 
         // Redirect user to Login screen as requested
         Alert.alert('Account Created', `Registration successful for ${firstName}! Please log in with your credentials.`);
