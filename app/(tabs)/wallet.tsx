@@ -45,43 +45,8 @@ export default function WalletScreen() {
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-                    {/* ─── My Wallets ─── */}
+                    {/* ─── Activity Summary (Chart First) ─── */}
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>My Wallets ({wallets.length})</Text>
-                        <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
-                            <Text style={styles.seeAll}>See all</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {wallets.length === 0 ? (
-                        <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No wallets found.</Text>
-                    ) : (
-
-                        wallets.map((w: any, i: number) => {
-                            const balance = parseFloat(w.balance) || 0;
-                            const isNegative = balance < 0;
-                            return (
-                                <TouchableOpacity key={w.id || i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
-                                    <View style={[styles.walletIconBg, { backgroundColor: (w.color || COLORS.primary) + '18' }]}>
-                                        <Ionicons name={getWalletIcon(w.type)} size={20} color={w.color || COLORS.primary} />
-                                    </View>
-                                    <View style={styles.walletDetails}>
-                                        <Text style={styles.walletName}>{w.name}</Text>
-                                        <Text style={styles.walletAcc}>{w.type}</Text>
-                                    </View>
-                                    <View style={styles.walletRight}>
-                                        <Text style={[styles.walletAmount, { color: isNegative ? COLORS.expense : COLORS.text }]}>
-                                            {isNegative ? '-' : ''}{formatAmount(Math.abs(balance))}
-                                        </Text>
-                                        <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
-                                    </View>
-                                </TouchableOpacity>
-                            );
-                        })
-                    )}
-
-                    {/* ─── Activity Summary ─── */}
-                    <View style={[styles.sectionHeader, { marginTop: SIZES.lg }]}>
                         <Text style={styles.sectionTitle}>Activity Summary</Text>
                         <View style={styles.periodPill}>
                             <Text style={styles.periodText}>This Week</Text>
@@ -130,6 +95,41 @@ export default function WalletScreen() {
                             </View>
                         </View>
                     </View>
+
+                    {/* ─── My Wallets ─── */}
+                    <View style={[styles.sectionHeader, { marginTop: SIZES.lg }]}>
+                        <Text style={styles.sectionTitle}>My Wallets ({wallets.length})</Text>
+                        <TouchableOpacity onPress={() => router.push('/(tabs)/transactions')}>
+                            <Text style={styles.seeAll}>See all</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {wallets.length === 0 ? (
+                        <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No wallets found.</Text>
+                    ) : (
+
+                        wallets.map((w: any, i: number) => {
+                            const balance = parseFloat(w.balance) || 0;
+                            const isNegative = balance < 0;
+                            return (
+                                <TouchableOpacity key={w.id || i} style={styles.walletCard} onPress={() => router.push('/(tabs)/transactions')}>
+                                    <View style={[styles.walletIconBg, { backgroundColor: (w.color || COLORS.primary) + '18' }]}>
+                                        <Ionicons name={getWalletIcon(w.type)} size={20} color={w.color || COLORS.primary} />
+                                    </View>
+                                    <View style={styles.walletDetails}>
+                                        <Text style={styles.walletName}>{w.name}</Text>
+                                        <Text style={styles.walletAcc}>{w.type}</Text>
+                                    </View>
+                                    <View style={styles.walletRight}>
+                                        <Text style={[styles.walletAmount, { color: isNegative ? COLORS.expense : COLORS.text }]}>
+                                            {isNegative ? '-' : ''}{formatAmount(Math.abs(balance))}
+                                        </Text>
+                                        <Ionicons name="chevron-forward" size={14} color={COLORS.secondaryText} />
+                                    </View>
+                                </TouchableOpacity>
+                            );
+                        })
+                    )}
 
                 </ScrollView>
             </View>
