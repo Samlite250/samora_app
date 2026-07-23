@@ -16,6 +16,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { COLORS } from '../src/core/theme';
 import { LockScreen } from '../src/presentation/components/LockScreen';
+import { useAppDataStore } from '../src/store/useAppDataStore';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useCurrencyStore } from '../src/store/useCurrencyStore';
 
@@ -24,11 +25,14 @@ const queryClient = new QueryClient();
 export default function RootLayout() {
     const { isBiometricEnabled } = useAuthStore();
     const { fetchLiveRates } = useCurrencyStore();
+    const { checkUpcomingBills } = useAppDataStore();
     const [isUnlocked, setIsUnlocked] = useState(false);
 
     // Fetch live currency exchange rates silently on startup
+    // And trigger automated check for upcoming bills
     useEffect(() => {
         fetchLiveRates();
+        checkUpcomingBills();
     }, []);
 
     const [fontsLoaded] = useFonts({

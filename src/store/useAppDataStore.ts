@@ -21,6 +21,11 @@ interface AppDataState {
     bills: BillRecord[];
     budgets: BudgetRecord[];
     goals: GoalRecord[];
+    healthScore: number;
+
+    // Computed / Automation
+    getHealthScore: () => number;
+    checkUpcomingBills: () => void;
 
     // Actions
     addTransaction: (tx: Omit<TransactionRecord, 'id'>) => Promise<void>;
@@ -48,6 +53,53 @@ export const useAppDataStore = create<AppDataState>()(
             bills: INITIAL_BILLS,
             budgets: INITIAL_BUDGETS,
             goals: INITIAL_GOALS,
+            healthScore: 85, // Default Mock
+
+            getHealthScore: () => {
+                const { wallets, bills, budgets } = get();
+                const totalBalance = wallets.reduce((sum, w) => sum + (parseFloat(String(w.balance)) || 0), 0);
+                const unpaidBills = bills.filter(b => !b.is_paid).reduce((sum, b) => sum + (parseFloat(String(b.amount)) || 0), 0);
+
+                // Simplified health algorithm
+                let score = 100;
+
+                // Deduct if unpaid bills >> balance
+                if (unpaidBills > totalBalance) {
+                    score -= 40;
+                } else if (unpaidBills > totalBalance * 0.5) {
+                    score -= 20;
+                }
+
+                // Deduct if budgets are mostly exhausted
+                const exhaustedBudgets = budgets.filter(b => b.pct >= 80).length;
+                score -= (exhaustedBudgets * 5); // 5 points per exhausted budget
+
+                return Math.max(0, Math.min(100, score));
+            },
+
+            checkUpcomingBills: () => {
+                const { bills } = get();
+                const today = new Date();
+
+                const upcoming = bills.filter(b => {
+                    if (b.is_paid) return false;
+                    const dueDate = new Date(b.due_date);
+                    const diffTime = Math.abs(dueDate.getTime() - today.getTime());
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    return diffDays <= 3;
+                });
+
+                if (upcoming.length > 0) {
+                    const count = upcoming.length;
+                    const totalAmount = upcoming.reduce((sum, b) => sum + (parseFloat(String(b.amount)) || 0), 0);
+                    // Standard React Native Alert
+                    console.log(`[Automation] Triggering Alert: ${count} bills due shortly.`);
+                    Alert.alert(
+                        'Upcoming Bills Alert',
+                        `You have ${count} bill(s) due in the next 3 days totaling ${totalAmount} FRw. Make sure your wallets are funded.`
+                    );
+                }
+            },
 
             addTransaction: async (newTx) => {
                 const id = `tx_${Date.now()}`;

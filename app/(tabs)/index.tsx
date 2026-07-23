@@ -33,8 +33,9 @@ const getGreeting = () => {
 export default function HomeScreen() {
     const router = useRouter();
     const { currency, formatAmount } = useCurrencyStore();
-    const { wallets, transactions, addTransaction } = useAppDataStore();
+    const { wallets, transactions, addTransaction, getHealthScore } = useAppDataStore();
     const { profile } = useAuthStore();
+    const healthScore = getHealthScore();
 
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
     const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -180,6 +181,21 @@ export default function HomeScreen() {
                                 }]}
                             />
                         ))}
+                    </View>
+                </View>
+
+                {/* ─── Financial Health Score ─── */}
+                <View style={[styles.summaryRow, { marginTop: 4, paddingBottom: 16 }]}>
+                    <View style={{ flex: 1, backgroundColor: '#FFFFFF', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#EEF1F7', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+                        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: healthScore >= 80 ? 'rgba(22,163,74,0.1)' : healthScore >= 50 ? 'rgba(245,158,11,0.1)' : 'rgba(239,68,68,0.1)', alignItems: 'center', justifyContent: 'center' }}>
+                            <Text style={{ fontFamily: FONTS.bold, fontSize: 18, color: healthScore >= 80 ? COLORS.success : healthScore >= 50 ? '#F59E0B' : COLORS.expense }}>{healthScore}</Text>
+                        </View>
+                        <View style={{ flex: 1, gap: 4 }}>
+                            <Text style={{ fontFamily: FONTS.semiBold, fontSize: 16, color: COLORS.text }}>Financial Health</Text>
+                            <Text style={{ fontFamily: FONTS.regular, fontSize: 13, color: COLORS.secondaryText }}>
+                                {healthScore >= 80 ? "You're in great shape! Keep saving." : healthScore >= 50 ? "Your budget is tight. Monitor expenses." : "Warning! You have unpaid bills and low capacity."}
+                            </Text>
+                        </View>
                     </View>
                 </View>
 

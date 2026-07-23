@@ -58,7 +58,8 @@
         }
       ],
       "expo-notifications",
-      "expo-video"
+      "expo-video",
+      "expo-sharing"
     ],
     "extra": {
       "router": {

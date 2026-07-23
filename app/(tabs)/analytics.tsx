@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { useAppDataStore } from '../../src/store/useAppDataStore';
@@ -63,13 +65,96 @@ export default function AnalyticsScreen() {
 
     const isPositive = netCashFlow >= 0;
 
+    const generatePDF = async () => {
+        try {
+            const html = `
+                <html>
+                <head>
+                    <style>
+                        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; padding: 40px; color: #1e293b; }
+                        h1 { color: #2563eb; font-size: 28px; }
+                        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #e2e8f0; padding-bottom: 20px; margin-bottom: 30px; }
+                        .summary { display: flex; gap: 40px; margin-bottom: 40px; }
+                        .summary-box { background: #f8fafc; padding: 20px; border-radius: 12px; flex: 1; }
+                        .box-title { font-size: 14px; color: #64748b; margin-bottom: 5px; }
+                        .box-amount { font-size: 24px; font-weight: bold; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #e2e8f0; }
+                        th { background-color: #f8fafc; font-weight: bold; color: #64748b; font-size: 14px; }
+                        .income { color: #16a34a; }
+                        .expense { color: #ef4444; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Samora Fintech</h1>
+                        <div style="text-align:right; color:#64748b;">
+                            <p><strong>Financial Report</strong></p>
+                            <p>${new Date().toLocaleDateString()}</p>
+                        </div>
+                    </div>
+
+                    <div class="summary">
+                        <div class="summary-box">
+                            <div class="box-title">Total Income</div>
+                            <div class="box-amount income">${formatAmount(totalIncome)}</div>
+                        </div>
+                        <div class="summary-box">
+                            <div class="box-title">Total Expenses</div>
+                            <div class="box-amount expense">${formatAmount(totalExpenses)}</div>
+                        </div>
+                        <div class="summary-box">
+                            <div class="box-title">Net Cash Flow</div>
+                            <div class="box-amount ${isPositive ? 'income' : 'expense'}">${formatAmount(netCashFlow)}</div>
+                        </div>
+                    </div>
+
+                    <h2>Transaction History</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${transactions.map((t: any) => `
+                                <tr>
+                                    <td>${t.date}</td>
+                                    <td>${t.title}</td>
+                                    <td>${t.category}</td>
+                                    <td class="${t.type === 'income' ? 'income' : 'expense'}">
+                                        ${t.type === 'income' ? '+' : '-'}${formatAmount(t.amount)}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `;
+
+            const { uri } = await Print.printToFileAsync({ html });
+
+            if (await Sharing.isAvailableAsync()) {
+                await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
+            } else {
+                Alert.alert('Error', 'Sharing is not available on this device');
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to generate PDF report.');
+        }
+    };
+
     return (
         <ScreenBackground>
             <View style={styles.container}>
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>Analytics</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={generatePDF}>
                         <Ionicons name="download-outline" size={22} color={COLORS.primary} />
                     </TouchableOpacity>
                 </View>
