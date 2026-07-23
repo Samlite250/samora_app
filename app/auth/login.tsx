@@ -46,7 +46,11 @@ export default function LoginScreen() {
         // Seamless local authentication fallback
         useAuthStore.getState().loginWithCredentials(email);
         setLoading(false);
-        router.replace('/(tabs)');
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.location.href = '/';
+        } else {
+            router.replace('/(tabs)');
+        }
     };
 
     return (
