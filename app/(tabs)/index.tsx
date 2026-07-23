@@ -178,7 +178,7 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F4F7FB' },
+    container: { flex: 1, backgroundColor: 'transparent' },
     scroll: { paddingBottom: 20 },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },

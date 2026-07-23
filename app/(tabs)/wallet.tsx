@@ -132,7 +132,7 @@ export default function WalletScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F4F7FB' },
+    container: { flex: 1, backgroundColor: 'transparent' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerTitle: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
     addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: `${COLORS.primary}15`, alignItems: 'center', justifyContent: 'center' },

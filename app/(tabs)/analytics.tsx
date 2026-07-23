@@ -102,7 +102,7 @@ export default function AnalyticsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#F4F7FB' },
+    container: { flex: 1, backgroundColor: 'transparent' },
     header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: SIZES.lg, paddingTop: 52, paddingBottom: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#EEF1F7' },
     headerTitle: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.text },
     scroll: { padding: SIZES.lg, paddingBottom: 120, gap: SIZES.lg },
