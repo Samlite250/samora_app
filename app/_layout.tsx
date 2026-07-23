@@ -12,12 +12,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { COLORS } from '../src/core/theme';
+import { LockScreen } from '../src/presentation/components/LockScreen';
+import { useAuthStore } from '../src/store/useAuthStore';
+import { useCurrencyStore } from '../src/store/useCurrencyStore';
 
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
+    const { isBiometricEnabled } = useAuthStore();
+    const { fetchLiveRates } = useCurrencyStore();
+    const [isUnlocked, setIsUnlocked] = useState(false);
+
+    // Fetch live currency exchange rates silently on startup
+    useEffect(() => {
+        fetchLiveRates();
+    }, []);
+
     const [fontsLoaded] = useFonts({
         'DMSans-Regular': DMSans_400Regular,
         'DMSans-Medium': DMSans_500Medium,
@@ -33,6 +46,10 @@ export default function RootLayout() {
                 <ActivityIndicator color={COLORS.primary} size="large" />
             </View>
         );
+    }
+
+    if (isBiometricEnabled && !isUnlocked) {
+        return <LockScreen onUnlock={() => setIsUnlocked(true)} />;
     }
 
     return (

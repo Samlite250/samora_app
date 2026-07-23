@@ -33,6 +33,8 @@ interface AuthState {
     registeredUsers: Record<string, RegisteredUser>;
     isLoading: boolean;
     isAuthenticated: boolean;
+    isBiometricEnabled: boolean;
+    pinCode: string | null;
 
     // Actions
     setSession: (session: Session | null) => void;
@@ -41,6 +43,8 @@ interface AuthState {
     loginWithCredentials: (email: string) => boolean;
     updateProfile: (data: { fullName?: string; phone?: string; email?: string }) => Promise<void>;
     signOut: () => Promise<void>;
+    enableBiometrics: (pin: string) => void;
+    disableBiometrics: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -52,6 +56,8 @@ export const useAuthStore = create<AuthState>()(
             registeredUsers: {},
             isLoading: false,
             isAuthenticated: true, // Default true for instant demo access, updated on session change
+            isBiometricEnabled: false,
+            pinCode: null,
 
             setSession: (session) => {
                 const user = session?.user || null;
@@ -161,12 +167,11 @@ export const useAuthStore = create<AuthState>()(
                 const phone = data.phone !== undefined ? data.phone : current.phone;
                 const email = data.email !== undefined ? data.email : current.email;
 
-                // Split name into first and last name
                 const nameParts = fullName.trim().split(' ');
                 const firstName = nameParts[0] || current.firstName;
                 const lastName = nameParts.slice(1).join(' ') || current.lastName;
 
-                const updatedProfile: UserProfile = {
+                const updatedProfile = {
                     firstName,
                     lastName,
                     fullName,
@@ -176,21 +181,23 @@ export const useAuthStore = create<AuthState>()(
 
                 set({ profile: updatedProfile });
 
-                // Sync with Supabase if client exists and user is authenticated
                 if (supabase && get().user) {
                     try {
                         await supabase.auth.updateUser({
-                            data: {
-                                first_name: firstName,
-                                last_name: lastName,
-                                full_name: fullName,
-                                phone: phone,
-                            },
+                            data: { first_name: firstName, last_name: lastName, full_name: fullName, phone },
                         });
                     } catch (err) {
                         console.warn('[useAuthStore] Supabase profile sync warning:', err);
                     }
                 }
+            },
+
+            enableBiometrics: (pin: string) => {
+                set({ isBiometricEnabled: true, pinCode: pin });
+            },
+
+            disableBiometrics: () => {
+                set({ isBiometricEnabled: false, pinCode: null });
             },
 
             signOut: async () => {

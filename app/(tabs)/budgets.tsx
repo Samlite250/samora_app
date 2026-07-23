@@ -33,6 +33,29 @@ export default function BudgetsScreen() {
                         <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
                     </TouchableOpacity>
 
+                    {/* Global Budget Alerts */}
+                    {(() => {
+                        const exceededBudgets = budgets.filter(b => b.pct >= 100);
+                        const warningBudgets = budgets.filter(b => b.pct >= 80 && b.pct < 100);
+
+                        return (
+                            <View>
+                                {exceededBudgets.map(b => (
+                                    <View key={`exc-${b.id}`} style={styles.alertBannerDanger}>
+                                        <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+                                        <Text style={styles.alertBannerText}>Action Required: {b.category} budget exceeded (100%)</Text>
+                                    </View>
+                                ))}
+                                {warningBudgets.map(b => (
+                                    <View key={`warn-${b.id}`} style={styles.alertBannerWarning}>
+                                        <Ionicons name="warning" size={20} color="#FFFFFF" />
+                                        <Text style={styles.alertBannerText}>Warning: {b.category} budget at {b.pct}% capacity</Text>
+                                    </View>
+                                ))}
+                            </View>
+                        );
+                    })()}
+
                     {budgets.length === 0 ? (
                         <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No budgets found.</Text>
                     ) : (
@@ -102,4 +125,8 @@ const styles = StyleSheet.create({
     budgetAmounts: { fontFamily: FONTS.regular, fontSize: 12, color: COLORS.secondaryText },
     viewAllBtn: { paddingVertical: 14, alignItems: 'center' },
     viewAllText: { fontFamily: FONTS.semiBold, fontSize: 14, color: COLORS.primary },
+    alertBannerDanger: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#EF4444', padding: 12, borderRadius: 12, gap: 10, marginBottom: 8 },
+    alertBannerWarning: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B', padding: 12, borderRadius: 12, gap: 10, marginBottom: 8 },
+    alertBannerText: { fontFamily: FONTS.semiBold, fontSize: 13, color: '#FFFFFF', flex: 1 },
+
 });

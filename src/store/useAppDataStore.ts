@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Alert } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import {
@@ -74,7 +75,16 @@ export const useAppDataStore = create<AppDataState>()(
                 const updatedBudgets = get().budgets.map((b) => {
                     if (txItem.type === 'expense' && b.category.toLowerCase().includes(txItem.category.toLowerCase())) {
                         const newSpent = b.spent + txItem.amount;
-                        return { ...b, spent: newSpent, pct: Math.min(100, Math.round((newSpent / b.total) * 100)) };
+                        const newPct = Math.min(100, Math.round((newSpent / b.total) * 100));
+
+                        // Budget Alert Notifications
+                        if (newPct >= 100 && b.pct < 100) {
+                            Alert.alert('🚨 Budget Exceeded!', `You have exceeded your ${b.category} budget of ${b.total} FRw.`);
+                        } else if (newPct >= 80 && b.pct < 80) {
+                            Alert.alert('⚠️ Budget Warning', `You have used ${newPct}% of your ${b.category} budget.`);
+                        }
+
+                        return { ...b, spent: newSpent, pct: newPct };
                     }
                     return b;
                 });
