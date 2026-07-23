@@ -8,6 +8,7 @@ import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { AddBillModal } from '../../src/presentation/components/AddBillModal';
 import { CreateGoalModal } from '../../src/presentation/components/CreateGoalModal';
 import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
+import { ScanReceiptModal } from '../../src/presentation/components/ScanReceiptModal';
 import { SetBudgetModal } from '../../src/presentation/components/SetBudgetModal';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -25,8 +26,9 @@ const ACTIONS: Action[] = [
     { id: 'expense', label: 'Add Expense', icon: 'arrow-up-circle', color: COLORS.expense, desc: 'Log spending', type: 'expense' },
     { id: 'income', label: 'Add Income', icon: 'arrow-down-circle', color: COLORS.success, desc: 'Record earnings', type: 'income' },
     { id: 'transfer', label: 'Transfer', icon: 'swap-horizontal', color: COLORS.primary, desc: 'Between wallets', type: 'transfer' },
+    { id: 'scan', label: 'Scan Receipt', icon: 'scan-outline', color: '#8B5CF6', desc: 'AI OCR Extraction' },
     { id: 'bill', label: 'Add Bill', icon: 'receipt-outline', color: COLORS.warning, desc: 'Schedule payment' },
-    { id: 'budget', label: 'Set Budget', icon: 'pie-chart-outline', color: '#8B5CF6', desc: 'Spending limit' },
+    { id: 'budget', label: 'Set Budget', icon: 'pie-chart-outline', color: '#6366F1', desc: 'Spending limit' },
     { id: 'goal', label: 'Create Goal', icon: 'flag-outline', color: '#EC4899', desc: 'Save for a target' },
 ];
 
@@ -37,6 +39,7 @@ export default function AddScreen() {
     const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
     const [quickAddType, setQuickAddType] = useState<'income' | 'expense' | 'transfer'>('expense');
 
+    const [isScanOpen, setIsScanOpen] = useState(false);
     const [isAddBillOpen, setIsAddBillOpen] = useState(false);
     const [isSetBudgetOpen, setIsSetBudgetOpen] = useState(false);
     const [isCreateGoalOpen, setIsCreateGoalOpen] = useState(false);
@@ -45,6 +48,8 @@ export default function AddScreen() {
         if (action.type) {
             setQuickAddType(action.type);
             setIsQuickAddOpen(true);
+        } else if (action.id === 'scan') {
+            setIsScanOpen(true);
         } else if (action.id === 'bill') {
             setIsAddBillOpen(true);
         } else if (action.id === 'budget') {
@@ -95,19 +100,25 @@ export default function AddScreen() {
                     onClose={() => setIsQuickAddOpen(false)}
                 />
 
-                {/* 2. Schedule Bill Modal */}
+                {/* 2. Scan Receipt Modal */}
+                <ScanReceiptModal
+                    visible={isScanOpen}
+                    onClose={() => setIsScanOpen(false)}
+                />
+
+                {/* 3. Schedule Bill Modal */}
                 <AddBillModal
                     visible={isAddBillOpen}
                     onClose={() => setIsAddBillOpen(false)}
                 />
 
-                {/* 3. Set Budget Limit Modal */}
+                {/* 4. Set Budget Limit Modal */}
                 <SetBudgetModal
                     visible={isSetBudgetOpen}
                     onClose={() => setIsSetBudgetOpen(false)}
                 />
 
-                {/* 4. Create Savings Goal Modal */}
+                {/* 5. Create Savings Goal Modal */}
                 <CreateGoalModal
                     visible={isCreateGoalOpen}
                     onClose={() => setIsCreateGoalOpen(false)}

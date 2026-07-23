@@ -6,6 +6,7 @@ import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { CurrencySelectorModal } from '../../src/presentation/components/CurrencySelectorModal';
 import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
+import { ScanReceiptModal } from '../../src/presentation/components/ScanReceiptModal';
 import { useAppDataStore } from '../../src/store/useAppDataStore';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CURRENCIES, useCurrencyStore } from '../../src/store/useCurrencyStore';
@@ -298,29 +299,10 @@ export default function HomeScreen() {
             />
 
             {/* Scan Receipt Modal */}
-            <Modal visible={showScanModal} animationType="slide" transparent onRequestClose={() => setShowScanModal(false)}>
-                <View style={styles.modalOverlay}>
-                    <View style={styles.scanCard}>
-                        <View style={styles.scanHeader}>
-                            <Text style={styles.scanTitle}>Receipt Scanner</Text>
-                            <TouchableOpacity onPress={() => setShowScanModal(false)} style={styles.modalCloseBtn}>
-                                <Ionicons name="close" size={20} color={COLORS.text} />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={styles.scanBody}>
-                            <View style={styles.cameraBox}>
-                                <Ionicons name="scan-outline" size={64} color="#8B5CF6" />
-                                <Text style={styles.scanPrompt}>Position receipt within frame</Text>
-                                <Text style={styles.scanSub}>Auto-detects total amount & merchant</Text>
-                            </View>
-                            <TouchableOpacity style={styles.scanBtn} onPress={() => { setShowScanModal(false); Alert.alert('Receipt Scanned', 'Captured receipt: Simba Supermarket (FRw 14,500).'); }}>
-                                <Ionicons name="camera-outline" size={20} color="#FFFFFF" />
-                                <Text style={styles.scanBtnText}>Capture & Parse</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </Modal>
+            <ScanReceiptModal
+                visible={showScanModal}
+                onClose={() => setShowScanModal(false)}
+            />
 
             {/* Edit Quick Actions Modal */}
             <Modal visible={showEditActionsModal} animationType="fade" transparent onRequestClose={() => setShowEditActionsModal(false)}>
