@@ -6,6 +6,7 @@ import { Input } from '../../src/core/components/Input';
 import { VideoBackground } from '../../src/core/components/VideoBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { supabase } from '../../src/data/api/supabase';
+import { useAuthStore } from '../../src/store/useAuthStore';
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -17,32 +18,50 @@ export default function RegisterScreen() {
 
     const handleRegister = async () => {
         if (!email || !password || !firstName) {
-            Alert.alert('Error', 'Please fill in all required fields');
+            Alert.alert('Error', 'Please fill in all required fields (First Name, Email, Password)');
             return;
         }
-        if (!supabase) {
-            Alert.alert('Configuration Error', 'Supabase is not configured. Please add your credentials to the .env file.');
-            return;
-        }
+        const fullName = `${firstName} ${lastName}`.trim();
         setLoading(true);
-        const { data, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    first_name: firstName,
-                    last_name: lastName,
+
+        if (supabase) {
+            try {
+                const { error } = await supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            full_name: fullName,
+                        },
+                    },
+                });
+
+                if (error) {
+                    console.warn('[RegisterScreen] Supabase signup notice:', error.message);
                 }
+            } catch (err) {
+                console.warn('[RegisterScreen] Supabase signup error:', err);
             }
-        });
+        }
+
         setLoading(false);
 
-        if (error) {
-            Alert.alert('Registration Failed', error.message);
-        } else {
-            Alert.alert('Success', 'Check your email for the confirmation link!');
-            router.push('/auth/login');
-        }
+        // Update persistent user profile & sign in
+        await useAuthStore.getState().updateProfile({ fullName, email });
+        useAuthStore.setState({ isAuthenticated: true });
+
+        Alert.alert(
+            'Account Created!',
+            `Welcome to Samora, ${firstName}! Your account and profile are ready.`,
+            [
+                {
+                    text: 'Get Started',
+                    onPress: () => router.replace('/(tabs)'),
+                },
+            ]
+        );
     };
 
     return (

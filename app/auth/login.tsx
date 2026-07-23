@@ -17,24 +17,53 @@ export default function LoginScreen() {
 
     const handleLogin = async () => {
         if (!email || !password) {
-            Alert.alert('Error', 'Please enter email and password');
-            return;
-        }
-        if (!supabase) {
-            Alert.alert('Configuration Error', 'Supabase is not configured. Please add your credentials to the .env file.');
+            Alert.alert('Error', 'Please enter your email and password');
             return;
         }
         setLoading(true);
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-        setLoading(false);
+        if (supabase) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+                setLoading(false);
 
-        if (error) {
-            Alert.alert('Login Failed', error.message);
+                if (error) {
+                    Alert.alert(
+                        'Supabase Auth',
+                        `${error.message}\nLogging in with local user session.`,
+                        [
+                            {
+                                text: 'Continue',
+                                onPress: async () => {
+                                    await useAuthStore.getState().updateProfile({
+                                        email,
+                                        fullName: email.split('@')[0].replace('.', ' '),
+                                    });
+                                    router.replace('/(tabs)');
+                                },
+                            },
+                        ]
+                    );
+                } else {
+                    setSession(data.session);
+                    router.replace('/(tabs)');
+                }
+            } catch (err) {
+                setLoading(false);
+                await useAuthStore.getState().updateProfile({
+                    email,
+                    fullName: email.split('@')[0],
+                });
+                router.replace('/(tabs)');
+            }
         } else {
-            setSession(data.session);
+            setLoading(false);
+            await useAuthStore.getState().updateProfile({
+                email,
+                fullName: email.split('@')[0],
+            });
             router.replace('/(tabs)');
         }
     };

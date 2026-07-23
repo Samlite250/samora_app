@@ -51,17 +51,33 @@ const dr = StyleSheet.create({
 
 /* ─── PersonalInfoModal ─── */
 function PersonalInfoModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-    const [name, setName] = useState('Sam Ndayambaje');
-    const [phone, setPhone] = useState('+250 78 000 0000');
+    const { profile, updateProfile } = useAuthStore();
+    const [name, setName] = useState(profile.fullName);
+    const [phone, setPhone] = useState(profile.phone);
+
+    // Sync input when modal opens
+    React.useEffect(() => {
+        if (visible) {
+            setName(profile.fullName);
+            setPhone(profile.phone);
+        }
+    }, [visible, profile]);
+
+    const handleSave = async () => {
+        await updateProfile({ fullName: name, phone });
+        Alert.alert('Saved & Persisted', 'Your personal information has been saved successfully!');
+        onClose();
+    };
+
     return (
         <DrawerModal visible={visible} title="Personal Information" onClose={onClose}>
             <Text style={s.fieldLabel}>Full Name</Text>
-            <TextInput style={s.fieldInput} value={name} onChangeText={setName} />
-            <Text style={s.fieldLabel}>Email</Text>
-            <TextInput style={[s.fieldInput, { color: COLORS.secondaryText }]} value="sam@samora.com" editable={false} />
+            <TextInput style={s.fieldInput} value={name} onChangeText={setName} placeholder="Full Name" />
+            <Text style={s.fieldLabel}>Email Address</Text>
+            <TextInput style={[s.fieldInput, { color: COLORS.secondaryText }]} value={profile.email} editable={false} />
             <Text style={s.fieldLabel}>Phone Number</Text>
-            <TextInput style={s.fieldInput} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-            <TouchableOpacity style={s.saveBtn} onPress={() => { Alert.alert('Saved', 'Personal info updated!'); onClose(); }}>
+            <TextInput style={s.fieldInput} value={phone} onChangeText={setPhone} keyboardType="phone-pad" placeholder="+250 780 000 000" />
+            <TouchableOpacity style={s.saveBtn} onPress={handleSave}>
                 <Text style={s.saveBtnText}>Save Changes</Text>
             </TouchableOpacity>
         </DrawerModal>
@@ -245,7 +261,7 @@ function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => voi
 
 /* ─────────────── MAIN PROFILE SCREEN ─────────────── */
 export default function ProfileScreen() {
-    const signOut = useAuthStore(state => state.signOut);
+    const { profile, signOut } = useAuthStore();
     const { currency } = useCurrencyStore();
 
     const [modals, setModals] = useState({
@@ -263,7 +279,7 @@ export default function ProfileScreen() {
 
     const MENU: { label: string; icon: IoniconsName; color: string; sub?: string; key: keyof typeof modals }[] = [
         { label: 'Display Currency', icon: 'globe-outline', color: COLORS.primary, sub: `${CURRENCIES[currency].name} (${currency})`, key: 'currency' },
-        { label: 'Personal Information', icon: 'person-outline', color: COLORS.primary, key: 'personal' },
+        { label: 'Personal Information', icon: 'person-outline', color: COLORS.primary, sub: `${profile.fullName} • ${profile.phone}`, key: 'personal' },
         { label: 'Security & Privacy', icon: 'shield-checkmark-outline', color: COLORS.success, key: 'security' },
         { label: 'Preferences', icon: 'settings-outline', color: '#8B5CF6', key: 'prefs' },
         { label: 'Notification Settings', icon: 'notifications-outline', color: COLORS.warning, key: 'notifs' },
@@ -301,8 +317,8 @@ export default function ProfileScreen() {
                                 <Ionicons name="camera" size={13} color="#FFFFFF" />
                             </TouchableOpacity>
                         </View>
-                        <Text style={s.profileName}>Sam Ndayambaje</Text>
-                        <Text style={s.profileEmail}>sam@samora.com</Text>
+                        <Text style={s.profileName}>{profile.fullName}</Text>
+                        <Text style={s.profileEmail}>{profile.email}</Text>
                     </View>
 
                     {/* ─── Menu Items ─── */}

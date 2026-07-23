@@ -7,6 +7,7 @@ import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { CurrencySelectorModal } from '../../src/presentation/components/CurrencySelectorModal';
 import { QuickAddModal } from '../../src/presentation/components/QuickAddModal';
 import { useAppDataStore } from '../../src/store/useAppDataStore';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { CURRENCIES, useCurrencyStore } from '../../src/store/useCurrencyStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -32,6 +33,7 @@ export default function HomeScreen() {
     const router = useRouter();
     const { currency, formatAmount } = useCurrencyStore();
     const { wallets, transactions, addTransaction } = useAppDataStore();
+    const { profile } = useAuthStore();
 
     const [showCurrencyModal, setShowCurrencyModal] = useState(false);
     const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -93,7 +95,7 @@ export default function HomeScreen() {
                         </TouchableOpacity>
                         <View>
                             <Text style={styles.greeting}>{getGreeting()}</Text>
-                            <Text style={styles.name}>Sam 👋</Text>
+                            <Text style={styles.name}>{profile.firstName || 'Sam'} 👋</Text>
                         </View>
                     </View>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
