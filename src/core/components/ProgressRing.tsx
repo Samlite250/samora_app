@@ -1,7 +1,6 @@
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { COLORS, FONTS } from '../theme';
 
 interface ProgressRingProps {
@@ -12,6 +11,8 @@ interface ProgressRingProps {
     label?: string;
 }
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
 export const ProgressRing: React.FC<ProgressRingProps> = ({
     progress,
     size = 120,
@@ -20,56 +21,53 @@ export const ProgressRing: React.FC<ProgressRingProps> = ({
     label
 }) => {
     const radius = (size - strokeWidth) / 2;
-    const center = size / 2;
-    const path = Skia.Path.Make();
-
-    // Create arc for circle
-    path.addArc(
-        { x: strokeWidth / 2, y: strokeWidth / 2, width: size - strokeWidth, height: size - strokeWidth },
-        270, // start angle (top)
-        360 // sweep angle
-    );
-
-    const animatedProgress = useSharedValue(0);
+    const circumference = 2 * Math.PI * radius;
+    const animatedValue = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        animatedProgress.value = withTiming(progress, {
+        Animated.timing(animatedValue, {
+            toValue: progress,
             duration: 1500,
             easing: Easing.inOut(Easing.cubic),
-        });
+            useNativeDriver: false,
+        }).start();
     }, [progress]);
 
-    // @ts-ignore
-    const animatedProps = useAnimatedProps(() => {
-        return {
-            end: animatedProgress.value
-        };
+    const strokeDashoffset = animatedValue.interpolate({
+        inputRange: [0, 1],
+        outputRange: [circumference, 0],
     });
+
+    const center = size / 2;
 
     return (
         <View style={{ width: size, height: size, justifyContent: 'center', alignItems: 'center' }}>
-            <Canvas style={{ width: size, height: size, position: 'absolute' }}>
+            <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
                 {/* Background track */}
-                <Path
-                    path={path}
-                    style="stroke"
+                <Circle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke={COLORS.secondaryBackground || '#E2E8F0'}
                     strokeWidth={strokeWidth}
-                    color={COLORS.secondaryBackground}
-                    strokeCap="round"
-                    start={0}
-                    end={1}
+                    fill="none"
+                    strokeLinecap="round"
                 />
-                {/* Animated Progress */}
-                <Path
-                    path={path}
-                    style="stroke"
+                {/* Animated progress arc */}
+                <AnimatedCircle
+                    cx={center}
+                    cy={center}
+                    r={radius}
+                    stroke={color}
                     strokeWidth={strokeWidth}
-                    color={color}
-                    strokeCap="round"
-                    // @ts-ignore
-                    animatedProps={animatedProps}
+                    fill="none"
+                    strokeLinecap="round"
+                    strokeDasharray={`${circumference} ${circumference}`}
+                    strokeDashoffset={strokeDashoffset}
+                    rotation="-90"
+                    origin={`${center}, ${center}`}
                 />
-            </Canvas>
+            </Svg>
             <View style={styles.innerLabelContainer}>
                 <Text style={[styles.percentageLabel, { color }]}>{`${Math.round(progress * 100)}%`}</Text>
                 {label && <Text style={styles.subLabel}>{label}</Text>}

@@ -30,10 +30,14 @@ export default function RootLayout() {
     const [isUnlocked, setIsUnlocked] = useState(false);
 
     useEffect(() => {
-        fetchLiveRates();
-        checkUpcomingBills();
-        checkGoalProgress();
-        checkPlanReminders();
+        // Delay startup alerts to ensure native UI is fully mounted before Alert is called
+        const timeout = setTimeout(() => {
+            try { fetchLiveRates(); } catch (e) { }
+            try { checkUpcomingBills(); } catch (e) { }
+            try { checkGoalProgress(); } catch (e) { }
+            try { checkPlanReminders(); } catch (e) { }
+        }, 2000);
+        return () => clearTimeout(timeout);
     }, []);
 
     const [fontsLoaded] = useFonts({
