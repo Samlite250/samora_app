@@ -14,7 +14,7 @@ import { Stack } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { COLORS } from '../src/core/theme';
 import { LockScreen } from '../src/presentation/components/LockScreen';
 import { useAppDataStore } from '../src/store/useAppDataStore';
@@ -59,10 +59,12 @@ export default function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <Head>
-                <title>Digital+</title>
-                <meta name="description" content="Digital+ - Premium Personal Finance & Life Management" />
-            </Head>
+            {Platform.OS === 'web' && (
+                <Head>
+                    <title>Digital+</title>
+                    <meta name="description" content="Digital+ - Premium Personal Finance & Life Management" />
+                </Head>
+            )}
             <View style={styles.container}>
                 <StatusBar style="dark" />
                 <Stack screenOptions={{ headerShown: false, title: 'Digital+' }}>
