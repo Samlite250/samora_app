@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import {
     Alert,
     Modal,
+    Platform,
     ScrollView,
     StyleSheet,
     Switch,
@@ -237,15 +238,15 @@ function HelpModal({ visible, onClose }: { visible: boolean; onClose: () => void
 /* ─── AboutModal ─── */
 function AboutModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
     return (
-        <DrawerModal visible={visible} title="About Samora" onClose={onClose}>
+        <DrawerModal visible={visible} title="About Digital+" onClose={onClose}>
             <View style={s.aboutHero}>
                 <View style={s.aboutLogo}>
                     <Ionicons name="wallet" size={40} color={COLORS.primary} />
                 </View>
-                <Text style={s.aboutAppName}>Samora Finance</Text>
+                <Text style={s.aboutAppName}>Digital+</Text>
                 <Text style={s.aboutVersion}>Version 1.0.0 (Build 100)</Text>
             </View>
-            <Text style={s.aboutDesc}>Samora Finance is a premium personal finance manager built for East Africa — helping you track spending, manage bills, and grow your savings.</Text>
+            <Text style={s.aboutDesc}>Digital+ is a premium personal finance manager built for East Africa — helping you track spending, manage bills, and grow your savings.</Text>
             {[
                 { label: 'Privacy Policy', icon: 'shield-outline' },
                 { label: 'Terms of Service', icon: 'document-text-outline' },
@@ -290,21 +291,33 @@ export default function ProfileScreen() {
         { label: 'Notification Settings', icon: 'notifications-outline', color: COLORS.warning, key: 'notifs' },
         { label: 'Linked Accounts', icon: 'link-outline', color: '#0EA5E9', key: 'linked' },
         { label: 'Help & Support', icon: 'help-circle-outline', color: COLORS.secondaryText, key: 'help' },
-        { label: 'About Samora', icon: 'information-circle-outline', color: COLORS.secondaryText, key: 'about' },
+        { label: 'About Digital+', icon: 'information-circle-outline', color: COLORS.secondaryText, key: 'about' },
     ];
 
     const handleLogOut = () => {
-        Alert.alert('Log Out', 'Are you sure you want to log out of your account?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Log Out',
-                style: 'destructive',
-                onPress: async () => {
-                    await signOut();
-                    router.replace('/(auth)/login');
+        const performLogout = async () => {
+            await signOut();
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.href = '/auth/login';
+            } else {
+                router.replace('/auth/login');
+            }
+        };
+
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            if (window.confirm('Are you sure you want to log out of your account?')) {
+                performLogout();
+            }
+        } else {
+            Alert.alert('Log Out', 'Are you sure you want to log out of your account?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Log Out',
+                    style: 'destructive',
+                    onPress: performLogout,
                 },
-            },
-        ]);
+            ]);
+        }
     };
 
     return (

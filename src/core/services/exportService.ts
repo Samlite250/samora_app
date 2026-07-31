@@ -35,7 +35,7 @@ export const filterTransactionsForExport = (
     return filtered;
 };
 
-export const exportToCSV = (transactions: any[], filename = 'samora_statement.csv') => {
+export const exportToCSV = (transactions: any[], filename = 'digital_plus_statement.csv') => {
     if (transactions.length === 0) return false;
 
     // Build CSV content
@@ -72,7 +72,7 @@ export const exportToCSV = (transactions: any[], filename = 'samora_statement.cs
 export const exportToPDF = (
     transactions: any[],
     userProfile: { full_name?: string; email?: string } = {},
-    filename = 'samora_statement.pdf'
+    filename = 'digital_plus_statement.pdf'
 ) => {
     const totalIncome = transactions
         .filter(t => t.type === 'income')
@@ -106,9 +106,52 @@ export const exportToPDF = (
     <html>
     <head>
         <meta charset="utf-8" />
-        <title>Samora Fintech - Financial Statement</title>
+        <title>Digital+ - Financial Statement</title>
         <style>
             body { font-family: 'Helvetica Neue', Arial, sans-serif; color: #1E293B; margin: 0; padding: 40px; }
+            @media print {
+                .no-print { display: none !important; }
+                body { padding: 20px !important; }
+            }
+            .action-bar {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background: #F8FAFC;
+                padding: 14px 20px;
+                border-radius: 12px;
+                margin-bottom: 24px;
+                border: 1px solid #E2E8F0;
+            }
+            .btn-back {
+                background: #FFFFFF;
+                color: #1A56DB;
+                border: 1px solid #CBD5E1;
+                padding: 10px 18px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            }
+            .btn-back:hover {
+                background: #F1F5F9;
+                border-color: #1A56DB;
+            }
+            .btn-print {
+                background: #1A56DB;
+                color: #FFFFFF;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 14px;
+                transition: all 0.2s ease;
+            }
+            .btn-print:hover {
+                background: #1D4ED8;
+            }
             .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1A56DB; padding-bottom: 20px; margin-bottom: 30px; }
             .brand { font-size: 24px; font-weight: bold; color: #1A56DB; letter-spacing: -0.5px; }
             .tagline { font-size: 12px; color: #64748B; margin-top: 2px; }
@@ -135,9 +178,14 @@ export const exportToPDF = (
         </style>
     </head>
     <body>
+        <div class="no-print action-bar">
+            <button onclick="window.close()" class="btn-back">← Back to App Dashboard</button>
+            <button onclick="window.print()" class="btn-print">🖨️ Print / Save as PDF</button>
+        </div>
+
         <div class="header">
             <div>
-                <div class="brand">SAMORA FINTECH</div>
+                <div class="brand">DIGITAL+</div>
                 <div class="tagline">Official Financial Statement</div>
             </div>
             <div class="statement-title">
@@ -149,7 +197,7 @@ export const exportToPDF = (
         <div class="user-box">
             <div class="user-info">
                 <p><strong>Account Holder:</strong> ${userProfile.full_name || 'Valued User'}</p>
-                <p><strong>Email:</strong> ${userProfile.email || 'user@samora.app'}</p>
+                <p><strong>Email:</strong> ${userProfile.email || 'user@digitalplus.app'}</p>
             </div>
             <div class="user-info" style="text-align: right;">
                 <p><strong>Currency:</strong> RWF (Rwandan Franc)</p>
@@ -189,7 +237,7 @@ export const exportToPDF = (
         </table>
 
         <div class="footer">
-            Samora Financial Technologies Ltd. • End-to-end encrypted statement • Confidential
+            Digital+ Financial Technologies Ltd. • End-to-end encrypted statement • Confidential
         </div>
     </body>
     </html>

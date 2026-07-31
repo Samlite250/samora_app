@@ -121,6 +121,18 @@ export const useAuthStore = create<AuthState>()(
                 };
 
                 set({ registeredUsers: newUsers, profile: newProfile });
+                try {
+                    AsyncStorage.setItem('samora_auth_store', JSON.stringify({
+                        state: {
+                            profile: newProfile,
+                            isAuthenticated: get().isAuthenticated,
+                            registeredUsers: newUsers,
+                        },
+                        version: 0,
+                    }));
+                } catch (e) {
+                    // Ignore storage flush warnings
+                }
             },
 
             loginWithCredentials: (email) => {
@@ -128,36 +140,47 @@ export const useAuthStore = create<AuthState>()(
                 const users = get().registeredUsers || {};
                 const found = users[key];
 
+                let newProfile: UserProfile;
                 if (found) {
                     const nameParts = found.fullName.trim().split(' ');
                     const firstName = nameParts[0] || 'User';
                     const lastName = nameParts.slice(1).join(' ') || '';
-
-                    set({
-                        isAuthenticated: true,
-                        profile: {
-                            firstName,
-                            lastName,
-                            fullName: found.fullName,
-                            email: found.email,
-                            phone: get().profile.phone || '+250 780 000 000',
-                        },
-                    });
-                    return true;
-                }
-
-                // If not in registry, construct account dynamically from email
-                const dynamicName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-                set({
-                    isAuthenticated: true,
-                    profile: {
+                    newProfile = {
+                        firstName,
+                        lastName,
+                        fullName: found.fullName,
+                        email: found.email,
+                        phone: get().profile.phone || '+250 780 000 000',
+                    };
+                } else {
+                    const dynamicName = email.split('@')[0].replace(/[._-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                    newProfile = {
                         firstName: dynamicName.split(' ')[0] || 'User',
                         lastName: dynamicName.split(' ').slice(1).join(' ') || '',
                         fullName: dynamicName,
                         email: email,
                         phone: get().profile.phone || '+250 780 000 000',
-                    },
+                    };
+                }
+
+                set({
+                    isAuthenticated: true,
+                    profile: newProfile,
                 });
+
+                try {
+                    AsyncStorage.setItem('samora_auth_store', JSON.stringify({
+                        state: {
+                            profile: newProfile,
+                            isAuthenticated: true,
+                            registeredUsers: users,
+                        },
+                        version: 0,
+                    }));
+                } catch (e) {
+                    // Ignore storage flush warnings
+                }
+
                 return true;
             },
 
@@ -209,6 +232,18 @@ export const useAuthStore = create<AuthState>()(
                     }
                 }
                 set({ session: null, user: null, isAuthenticated: false });
+                try {
+                    await AsyncStorage.setItem('samora_auth_store', JSON.stringify({
+                        state: {
+                            profile: get().profile,
+                            isAuthenticated: false,
+                            registeredUsers: get().registeredUsers,
+                        },
+                        version: 0,
+                    }));
+                } catch (e) {
+                    // Ignore storage flush warnings
+                }
             },
         }),
         {

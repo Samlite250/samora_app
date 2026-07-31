@@ -1,35 +1,35 @@
 {
   "expo": {
-    "name": "Samora",
-    "slug": "samora-app",
+    "name": "Digital+",
+    "slug": "digital-plus-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./samora_logo.jpeg",
+    "icon": "./digital_plus_logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./samora_logo.jpeg",
+      "image": "./digital_plus_logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.samora.app",
+      "bundleIdentifier": "com.digitalplus.app",
       "infoPlist": {
         "UIBackgroundModes": [
           "fetch",
           "remote-notification"
         ],
-        "NSFaceIDUsageDescription": "Samora needs FaceID to securely access your financial data.",
-        "NSCameraUsageDescription": "Samora needs camera access to scan receipts for quick expense adding."
+        "NSFaceIDUsageDescription": "Digital+ needs FaceID to securely access your financial data.",
+        "NSCameraUsageDescription": "Digital+ needs camera access to scan receipts for quick expense adding."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./samora_logo.jpeg",
+        "foregroundImage": "./digital_plus_logo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.samora.app",
+      "package": "com.digitalplus.app",
       "permissions": [
         "android.permission.USE_BIOMETRIC",
         "android.permission.USE_FINGERPRINT",
@@ -38,7 +38,7 @@
       ]
     },
     "web": {
-      "favicon": "./samora_logo.jpeg"
+      "favicon": "./digital_plus_logo.png"
     },
     "plugins": [
       [
@@ -51,7 +51,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./samora_logo.jpeg",
+          "image": "./digital_plus_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

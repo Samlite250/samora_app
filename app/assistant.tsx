@@ -1,8 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../src/core/theme';
+
+import { generateAIResponse } from '../src/services/aiService';
+import { useAppDataStore } from '../src/store/useAppDataStore';
+import { useCurrencyStore } from '../src/store/useCurrencyStore';
 
 const SUGGESTIONS = [
     'Analyze my spending',
@@ -13,36 +17,66 @@ const SUGGESTIONS = [
 
 export default function AssistantScreen() {
     const router = useRouter();
+    const { wallets, transactions, bills, budgets, goals, getHealthScore } = useAppDataStore();
+    const { formatAmount } = useCurrencyStore();
+
     const [messages, setMessages] = useState<{ id: string; text: string; sender: 'user' | 'ai' }[]>([
-        { id: '1', text: 'Hi Sam!\nHow can I help you today?', sender: 'ai' }
+        { id: '1', text: 'Hi Sam!\nI am your Digital+ AI Financial Advisor. Ask me anything about your balance, expenses, savings goals, or budgets!', sender: 'ai' }
     ]);
     const [input, setInput] = useState('');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [apiKey, setApiKey] = useState('');
+    const [showKeyModal, setShowKeyModal] = useState(false);
+    const [tempKey, setTempKey] = useState('');
 
-    const handleSend = (text: string) => {
-        if (!text.trim()) return;
+    const handleSend = async (text: string) => {
+        if (!text.trim() || isAnalyzing) return;
         const userMsg = { id: Date.now().toString(), text, sender: 'user' as const };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
+        setIsAnalyzing(true);
 
-        // Mock AI Response
-        setTimeout(() => {
-            setMessages(prev => [...prev, {
-                id: (Date.now() + 1).toString(),
-                text: "I'm currently analyzing your recent transactions to build a tailored plan...",
-                sender: 'ai'
-            }]);
-        }, 1000);
+        // Call Real AI Financial Reasoning Engine with live user account context
+        const responseText = await generateAIResponse(text, {
+            wallets,
+            transactions,
+            bills,
+            budgets,
+            goals,
+            healthScore: getHealthScore(),
+            userApiKey: apiKey,
+        }, formatAmount);
+
+        setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            text: responseText,
+            sender: 'ai'
+        }]);
+        setIsAnalyzing(false);
+    };
+
+    const handleSaveKey = () => {
+        setApiKey(tempKey.trim());
+        setShowKeyModal(false);
+        if (tempKey.trim()) {
+            Alert.alert('API Key Saved', 'Connected to real AI LLM completions successfully!');
+        }
     };
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             {/* Custom Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)')} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={22} color={COLORS.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>AI Assistant</Text>
-                <View style={{ width: 22 }} />
+                <View style={{ alignItems: 'center' }}>
+                    <Text style={styles.headerTitle}>Digital+ AI Assistant</Text>
+                    <Text style={{ fontFamily: FONTS.medium, fontSize: 10, color: COLORS.success }}>
+                        ● Active Neural Engine
+                    </Text>
+                </View>
+                <View style={{ width: 36 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} style={styles.chatArea} showsVerticalScrollIndicator={false}>
@@ -58,7 +92,16 @@ export default function AssistantScreen() {
                     </View>
                 ))}
 
-                {messages.length === 1 && (
+                {isAnalyzing && (
+                    <View style={[styles.messageBubble, styles.aiBubble, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}>
+                        <Ionicons name="sparkles" size={16} color={COLORS.primary} />
+                        <Text style={[styles.messageText, styles.aiText, { fontStyle: 'italic', color: COLORS.secondaryText }]}>
+                            Digital+ AI is typing...
+                        </Text>
+                    </View>
+                )}
+
+                {messages.length === 1 && !isAnalyzing && (
                     <View style={styles.suggestionsList}>
                         {SUGGESTIONS.map((item, idx) => (
                             <TouchableOpacity key={idx} style={styles.suggestionBtn} onPress={() => handleSend(item)}>
@@ -81,7 +124,7 @@ export default function AssistantScreen() {
                     onSubmitEditing={() => handleSend(input)}
                     returnKeyType="send"
                 />
-                <TouchableOpacity style={styles.sendBtn} onPress={() => handleSend(input)}>
+                <TouchableOpacity style={[styles.sendBtn, isAnalyzing && { opacity: 0.6 }]} onPress={() => handleSend(input)} disabled={isAnalyzing}>
                     <Ionicons name="send" size={18} color="#FFFFFF" />
                 </TouchableOpacity>
             </View>

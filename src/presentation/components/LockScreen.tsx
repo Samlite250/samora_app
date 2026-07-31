@@ -35,7 +35,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({ onUnlock }) => {
     const handleBiometricAuth = async () => {
         try {
             const result = await LocalAuthentication.authenticateAsync({
-                promptMessage: 'Unlock Samora App',
+                promptMessage: 'Unlock Digital+ App',
                 fallbackLabel: 'Use PIN',
                 cancelLabel: 'Cancel',
                 disableDeviceFallback: true,

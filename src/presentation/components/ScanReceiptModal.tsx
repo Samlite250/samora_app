@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Image, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../core/theme';
+import { parseReceiptWithAI } from '../../services/aiService';
 import { useAppDataStore } from '../../store/useAppDataStore';
 import { useCurrencyStore } from '../../store/useCurrencyStore';
 
@@ -154,69 +155,22 @@ export const ScanReceiptModal: React.FC<ScanReceiptModalProps> = ({ visible, onC
             toValue: 170,
             duration: 400,
             useNativeDriver: true,
-        }).start(() => {
+        }).start(async () => {
             const startTime = Date.now();
-            const cleanName = rawFileName.toLowerCase();
 
-            // Intelligent Sharp Text & Merchant Recognizer
-            let merchant = '';
-            let amount = 0;
-            let cat = 'Groceries';
-            let extractedPreview = '';
-
-            // Check filename or image title indicators
-            if (cleanName.includes('simba') || cleanName.includes('supermarket') || cleanName.includes('grocery')) {
-                merchant = 'Simba Supermarket';
-                cat = 'Groceries';
-                amount = 18500;
-                extractedPreview = 'SIMBA SUPERMARKET KIGALI\nITEMS: MILK 2L, BREAD, CHEESE\nTOTAL: 18,500 RWF';
-            } else if (cleanName.includes('java') || cleanName.includes('coffee') || cleanName.includes('cafe')) {
-                merchant = 'Java House Kigali';
-                cat = 'Food & Dining';
-                amount = 14200;
-                extractedPreview = 'JAVA HOUSE KIGALI\nCAPPUCCINO, CLUB SANDWICH\nTOTAL: 14,200 RWF';
-            } else if (cleanName.includes('fuel') || cleanName.includes('petrol') || cleanName.includes('sp') || cleanName.includes('shell')) {
-                merchant = 'SP Petrol Station';
-                cat = 'Transportation';
-                amount = 30000;
-                extractedPreview = 'SP PETROL STATION KIGALI\nSUPER UNLEADED 21.8L\nTOTAL: 30,000 RWF';
-            } else if (cleanName.includes('pharmacy') || cleanName.includes('med') || cleanName.includes('health')) {
-                merchant = 'Kigali City Pharmacy';
-                cat = 'Healthcare';
-                amount = 12500;
-                extractedPreview = 'KIGALI CITY PHARMACY\nPRESCRIPTION MEDS & VITAMINS\nTOTAL: 12,500 RWF';
-            } else if (cleanName.includes('bill') || cleanName.includes('canal') || cleanName.includes('airtel') || cleanName.includes('mtn')) {
-                merchant = 'Utility Bill Payment';
-                cat = 'Bills & Utilities';
-                amount = 25000;
-                extractedPreview = 'TELECOM & UTILITY RECEIPT\nMONTHLY BROADBAND SUBSCRIPTION\nTOTAL: 25,000 RWF';
-            } else {
-                const nameWithoutExt = rawFileName.split('.')[0].replace(/[-_]/g, ' ');
-                merchant = nameWithoutExt.replace(/\b\w/g, c => c.toUpperCase()) || 'Scanned Receipt';
-
-                // Extract numeric values from filename if present
-                const numMatch = cleanName.match(/(\d+[\d,.]*)/);
-                if (numMatch && numMatch[1]) {
-                    const parsedNum = parseFloat(numMatch[1].replace(/,/g, ''));
-                    if (!isNaN(parsedNum) && parsedNum > 100) {
-                        amount = parsedNum;
-                    }
-                }
-
-                if (!amount) amount = Math.floor(Math.random() * 20000) + 4500;
-                extractedPreview = `${merchant.toUpperCase()}\nTAX INVOICE #94821\nTOTAL AMOUNT: ${amount.toLocaleString()} FRW`;
-            }
+            // Run Real AI Vision & Receipt OCR Extractor
+            const result = await parseReceiptWithAI(imageSrc, rawFileName);
 
             const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
 
-            setTitle(merchant);
-            setAmountStr(amount.toString());
-            setCategory(cat);
-            setOcrConfidence(Math.floor(Math.random() * 4) + 96);
-            setExtractedTextPreview(extractedPreview);
+            setTitle(result.title);
+            setAmountStr(result.amount.toString());
+            setCategory(result.category);
+            setOcrConfidence(result.confidence);
+            setExtractedTextPreview(result.rawText);
             setScanningState('parsed');
 
-            triggerToast(`✅ Scan Complete (${elapsed}s)! Extracted ${merchant} - ${formatAmount(amount)}`, 'success');
+            triggerToast(`✅ Scan Complete (${elapsed}s)! Extracted ${result.title} - ${formatAmount(result.amount)}`, 'success');
         });
     };
 

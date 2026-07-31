@@ -10,7 +10,7 @@ interface QuickAddModalProps {
     visible: boolean;
     onClose: () => void;
     onSave?: (data: {
-        type: 'income' | 'expense' | 'transfer';
+        type: 'income' | 'expense';
         amount: number;
         currency: 'RWF' | 'USD';
         category: string;
@@ -18,13 +18,12 @@ interface QuickAddModalProps {
         description: string;
         date: string;
     }) => void;
-    initialType?: 'income' | 'expense' | 'transfer';
+    initialType?: 'income' | 'expense';
 }
 
 const CATEGORIES = {
     expense: ['Food & Dining', 'Shopping', 'Transport', 'Bills & Utilities', 'Housing', 'Entertainment', 'Healthcare', 'General'],
     income: ['Salary', 'Freelance', 'Business', 'Investment', 'Gift', 'Other'],
-    transfer: ['Self Transfer', 'Friend Transfer', 'Bank Transfer', 'Mobile Money'],
 };
 
 // Exact wallet names matching mockData & useAppDataStore
@@ -42,7 +41,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     onSave,
     initialType = 'expense',
 }) => {
-    const [type, setType] = useState<'income' | 'expense' | 'transfer'>(initialType);
+    const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(CATEGORIES.expense[0]);
     const [wallet, setWallet] = useState(WALLETS[0]);
@@ -131,11 +130,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                                 style={[styles.segmentBtn, type === 'income' && styles.segmentBtnIncome]}
                                 onPress={() => { setType('income'); setCategory(CATEGORIES.income[0]); setErrorMsg(''); }}>
                                 <Text style={[styles.segmentText, type === 'income' && styles.segmentTextActive]}>Income</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                style={[styles.segmentBtn, type === 'transfer' && styles.segmentBtnTransfer]}
-                                onPress={() => { setType('transfer'); setCategory(CATEGORIES.transfer[0]); setErrorMsg(''); }}>
-                                <Text style={[styles.segmentText, type === 'transfer' && styles.segmentTextActive]}>Transfer</Text>
                             </TouchableOpacity>
                         </View>
 

@@ -46,11 +46,7 @@ export default function LoginScreen() {
         // Seamless local authentication fallback
         useAuthStore.getState().loginWithCredentials(email);
         setLoading(false);
-        if (Platform.OS === 'web' && typeof window !== 'undefined') {
-            window.location.href = '/';
-        } else {
-            router.replace('/(tabs)');
-        }
+        router.replace('/(tabs)');
     };
 
     return (
@@ -68,12 +64,12 @@ export default function LoginScreen() {
                         <View style={styles.header}>
                             <View style={styles.logoContainer}>
                                 <Image
-                                    source={require('../../samora_logo.jpeg')}
+                                    source={require('../../digital_plus_logo.png')}
                                     style={styles.logo}
                                     contentFit="cover"
                                 />
                             </View>
-                            <Text style={styles.title}>Welcome to Samora</Text>
+                            <Text style={styles.title}>Welcome to Digital+</Text>
                             <Text style={styles.subtitle}>Manage Money. Plan Life. Achieve More.</Text>
                         </View>
 

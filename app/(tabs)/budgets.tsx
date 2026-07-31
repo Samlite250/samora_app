@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
 import { SetBudgetModal } from '../../src/presentation/components/SetBudgetModal';
@@ -33,25 +33,81 @@ export default function BudgetsScreen() {
                         <Ionicons name="chevron-down" size={13} color={COLORS.secondaryText} />
                     </TouchableOpacity>
 
-                    {/* Global Budget Alerts */}
+                    {/* Global Budget Alerts & Threshold Warnings */}
                     {(() => {
-                        const exceededBudgets = budgets.filter(b => b.pct >= 100);
-                        const warningBudgets = budgets.filter(b => b.pct >= 80 && b.pct < 100);
+                        const exceededBudgets = budgets.filter((b: any) => {
+                            const spent = parseFloat(b.spent) || 0;
+                            const total = parseFloat(b.total) || 1;
+                            return (spent / total) * 100 >= 100;
+                        });
+                        const warningBudgets = budgets.filter((b: any) => {
+                            const spent = parseFloat(b.spent) || 0;
+                            const total = parseFloat(b.total) || 1;
+                            const threshold = b.alert_threshold || 80;
+                            const pct = (spent / total) * 100;
+                            return pct >= threshold && pct < 100;
+                        });
 
                         return (
-                            <View>
-                                {exceededBudgets.map(b => (
-                                    <View key={`exc-${b.id}`} style={styles.alertBannerDanger}>
+                            <View style={{ gap: 8 }}>
+                                {exceededBudgets.map((b: any, idx: number) => (
+                                    <View key={`exc-${b.id || idx}`} style={styles.alertBannerDanger}>
                                         <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
-                                        <Text style={styles.alertBannerText}>Action Required: {b.category} budget exceeded (100%)</Text>
+                                        <Text style={styles.alertBannerText}>Action Required: {b.category || b.label} budget exceeded (100%+)</Text>
                                     </View>
                                 ))}
-                                {warningBudgets.map(b => (
-                                    <View key={`warn-${b.id}`} style={styles.alertBannerWarning}>
-                                        <Ionicons name="warning" size={20} color="#FFFFFF" />
-                                        <Text style={styles.alertBannerText}>Warning: {b.category} budget at {b.pct}% capacity</Text>
+                                {warningBudgets.map((b: any, idx: number) => {
+                                    const spent = parseFloat(b.spent) || 0;
+                                    const total = parseFloat(b.total) || 1;
+                                    const pct = Math.round((spent / total) * 100);
+                                    return (
+                                        <View key={`warn-${b.id || idx}`} style={styles.alertBannerWarning}>
+                                            <Ionicons name="warning" size={20} color="#FFFFFF" />
+                                            <Text style={styles.alertBannerText}>Warning: {b.category || b.label} budget reached {pct}% (Threshold: {b.alert_threshold || 80}%)</Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        );
+                    })()}
+
+                    {/* Unspent Budget Surplus Rollover Tracker */}
+                    {(() => {
+                        const totalSurplus = budgets.reduce((sum: number, b: any) => {
+                            const spent = parseFloat(b.spent) || 0;
+                            const total = parseFloat(b.total) || 0;
+                            return sum + Math.max(0, total - spent);
+                        }, 0);
+
+                        return (
+                            <View style={styles.rolloverCard}>
+                                <View style={styles.rolloverHeader}>
+                                    <View style={styles.rolloverIconBg}>
+                                        <Ionicons name="leaf" size={20} color="#10B981" />
                                     </View>
-                                ))}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={styles.rolloverTitle}>Monthly Budget Surplus</Text>
+                                        <Text style={styles.rolloverSub}>Unspent allocated funds available for savings</Text>
+                                    </View>
+                                    <Text style={styles.rolloverAmount}>{formatAmount(totalSurplus)}</Text>
+                                </View>
+                                {totalSurplus > 0 && (
+                                    <TouchableOpacity
+                                        style={styles.rolloverBtn}
+                                        onPress={() => {
+                                            const activeGoal = useAppDataStore.getState().goals[0];
+                                            if (activeGoal) {
+                                                useAppDataStore.getState().depositGoal(activeGoal.id, totalSurplus);
+                                                Alert.alert('Surplus Saved! 🎉', `${formatAmount(totalSurplus)} transferred into goal "${activeGoal.title}".`);
+                                            } else {
+                                                Alert.alert('No Active Savings Goal', 'Create a savings goal first to roll over surplus funds.');
+                                            }
+                                        }}
+                                    >
+                                        <Ionicons name="sparkles" size={16} color="#FFFFFF" />
+                                        <Text style={styles.rolloverBtnText}>Rollover Surplus to Savings Goal</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         );
                     })()}
@@ -129,4 +185,29 @@ const styles = StyleSheet.create({
     alertBannerWarning: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B', padding: 12, borderRadius: 12, gap: 10, marginBottom: 8 },
     alertBannerText: { fontFamily: FONTS.semiBold, fontSize: 13, color: '#FFFFFF', flex: 1 },
 
+    /* Rollover Card */
+    rolloverCard: {
+        backgroundColor: '#ECFDF5',
+        borderRadius: 16,
+        padding: SIZES.md,
+        borderWidth: 1,
+        borderColor: '#A7F3D0',
+        gap: 12,
+        marginVertical: 4,
+    },
+    rolloverHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    rolloverIconBg: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#D1FAE5', alignItems: 'center', justifyContent: 'center' },
+    rolloverTitle: { fontFamily: FONTS.bold, fontSize: 14, color: '#065F46' },
+    rolloverSub: { fontFamily: FONTS.regular, fontSize: 11, color: '#047857' },
+    rolloverAmount: { fontFamily: FONTS.mono, fontSize: 16, color: '#047857', fontWeight: '800' },
+    rolloverBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        backgroundColor: '#059669',
+        paddingVertical: 10,
+        borderRadius: 10,
+    },
+    rolloverBtnText: { fontFamily: FONTS.bold, fontSize: 13, color: '#FFFFFF' },
 });

@@ -37,7 +37,7 @@ export const CurrencySelectorModal: React.FC<Props> = ({ visible, onClose }) => 
                         </TouchableOpacity>
                     </View>
 
-                    <Text style={styles.subtitle}>Choose your preferred display currency across Samora.</Text>
+                    <Text style={styles.subtitle}>Choose your preferred display currency across Digital+.</Text>
 
                     {/* Currency Options */}
                     <View style={styles.optionsList}>

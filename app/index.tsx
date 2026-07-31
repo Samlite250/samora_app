@@ -1,7 +1,13 @@
 import { Redirect } from 'expo-router';
+import { useAuthStore } from '../src/store/useAuthStore';
 
-// DEMO MODE: Skip auth check — go straight to the dashboard.
-// Re-enable auth routing once Supabase credentials are configured.
 export default function AppEntry() {
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
+    if (!isAuthenticated) {
+        return <Redirect href="/auth/login" />;
+    }
+
     return <Redirect href="/(tabs)" />;
 }
+

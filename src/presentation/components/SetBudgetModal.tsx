@@ -17,6 +17,7 @@ const ICONS = ['restaurant-outline', 'home-outline', 'car-outline', 'flash-outli
 export const SetBudgetModal: React.FC<SetBudgetModalProps> = ({ visible, onClose, onSuccess }) => {
     const [category, setCategory] = useState(CATEGORIES[0]);
     const [totalLimit, setTotalLimit] = useState('');
+    const [alertThreshold, setAlertThreshold] = useState<number>(80);
     const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
     const [errorMsg, setErrorMsg] = useState('');
 
@@ -38,7 +39,8 @@ export const SetBudgetModal: React.FC<SetBudgetModalProps> = ({ visible, onClose
             total: parsedLimit,
             icon: selectedIcon,
             color: '#8B5CF6',
-        });
+            alert_threshold: alertThreshold,
+        } as any);
 
         setTotalLimit('');
         setErrorMsg('');
@@ -99,6 +101,19 @@ export const SetBudgetModal: React.FC<SetBudgetModalProps> = ({ visible, onClose
                                     style={[styles.iconBtn, selectedIcon === ic && styles.iconBtnActive]}
                                     onPress={() => setSelectedIcon(ic)}>
                                     <Ionicons name={ic as any} size={22} color={selectedIcon === ic ? '#FFFFFF' : COLORS.text} />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+
+                        {/* Warning Threshold Selector */}
+                        <Text style={styles.label}>Alert Warning Threshold</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                            {[75, 80, 90].map((th) => (
+                                <TouchableOpacity
+                                    key={th}
+                                    style={[styles.pill, alertThreshold === th && styles.pillActive]}
+                                    onPress={() => setAlertThreshold(th)}>
+                                    <Text style={[styles.pillText, alertThreshold === th && styles.pillTextActive]}>{th}% Limit</Text>
                                 </TouchableOpacity>
                             ))}
                         </View>

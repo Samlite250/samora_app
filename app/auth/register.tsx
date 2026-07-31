@@ -77,7 +77,7 @@ export default function RegisterScreen() {
                         <View style={styles.header}>
                             <View style={styles.logoContainer}>
                                 <Image
-                                    source={require('../../samora_logo.jpeg')}
+                                    source={require('../../digital_plus_logo.png')}
                                     style={styles.logo}
                                     contentFit="cover"
                                 />

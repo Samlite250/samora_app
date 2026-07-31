@@ -11,6 +11,7 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
@@ -58,9 +59,13 @@ export default function RootLayout() {
 
     return (
         <QueryClientProvider client={queryClient}>
+            <Head>
+                <title>Digital+</title>
+                <meta name="description" content="Digital+ - Premium Personal Finance & Life Management" />
+            </Head>
             <View style={styles.container}>
                 <StatusBar style="dark" />
-                <Stack screenOptions={{ headerShown: false }}>
+                <Stack screenOptions={{ headerShown: false, title: 'Digital+' }}>
                     <Stack.Screen name="(tabs)" />
                     <Stack.Screen name="auth" />
                 </Stack>

@@ -10,7 +10,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
     console.warn(
-        '[Samora] Supabase credentials missing. ' +
+        '[Digital+] Supabase credentials missing. ' +
         'Create a .env file with EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY. ' +
         'Authentication features will be disabled until credentials are set.'
     );
