@@ -1,19 +1,21 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ScreenBackground } from '../../src/core/components/ScreenBackground';
 import { COLORS, FONTS, SIZES } from '../../src/core/theme';
-import { useBills } from '../../src/data/hooks/useAppQueries';
-import { useAuthStore } from '../../src/store/useAuthStore';
+import { useAppDataStore } from '../../src/store/useAppDataStore';
 import { useCurrencyStore } from '../../src/store/useCurrencyStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function BillsScreen() {
     const [tab, setTab] = useState<'Upcoming' | 'Paid'>('Upcoming');
-    const { user } = useAuthStore();
     const { formatAmount } = useCurrencyStore();
-    const { data: bills = [], isLoading } = useBills(user?.id);
+
+    // Bug 2 fix: read bills from local Zustand store instead of useAppQueries (Supabase)
+    const { bills, markBillPaid } = useAppDataStore();
+
+    // Removed isLoading state because local data is immediate
 
     const filteredBills = bills.filter((b: any) => tab === 'Paid' ? b.is_paid : !b.is_paid);
 
@@ -38,9 +40,7 @@ export default function BillsScreen() {
                 </View>
 
                 <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-                    {isLoading ? (
-                        <ActivityIndicator style={{ marginTop: 20 }} color={COLORS.primary} />
-                    ) : filteredBills.length === 0 ? (
+                    {filteredBills.length === 0 ? (
                         <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.secondaryText }}>No {tab.toLowerCase()} bills found.</Text>
                     ) : (
                         filteredBills.map((b: any, i: number) => {
@@ -60,7 +60,10 @@ export default function BillsScreen() {
                                     <View style={styles.billRight}>
                                         <Text style={styles.billAmt}>{formatAmount(amountRwf)}</Text>
                                         {tab === 'Upcoming' && (
-                                            <TouchableOpacity style={styles.payBtn}>
+                                            <TouchableOpacity
+                                                style={styles.payBtn}
+                                                onPress={() => markBillPaid(b.id)} // Bug 1 fix
+                                            >
                                                 <Text style={styles.payBtnText}>Pay</Text>
                                             </TouchableOpacity>
                                         )}

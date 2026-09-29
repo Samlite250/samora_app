@@ -19,6 +19,7 @@ import { CurrencySelectorModal } from '../../src/presentation/components/Currenc
 import { ExportStatementModal } from '../../src/presentation/components/ExportStatementModal';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CURRENCIES, useCurrencyStore } from '../../src/store/useCurrencyStore';
+import { useWhatsAppStore } from '../../src/store/useWhatsAppStore';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
@@ -211,6 +212,173 @@ function LinkedAccountsModal({ visible, onClose }: { visible: boolean; onClose: 
     );
 }
 
+/* ─── WhatsAppModal ─── */
+function WhatsAppModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+    const {
+        linkedAccount,
+        isLoading,
+        error,
+        verificationStep,
+        pendingPhone,
+        fetchWhatsAppAccount,
+        sendVerificationCode,
+        confirmVerificationCode,
+        unlinkWhatsAppAccount,
+        resetVerification,
+    } = useWhatsAppStore();
+
+    const [phone, setPhone] = useState('');
+    const [otp, setOtp] = useState('');
+
+    React.useEffect(() => {
+        if (visible) {
+            fetchWhatsAppAccount();
+            resetVerification();
+            setPhone('');
+            setOtp('');
+        }
+    }, [visible]);
+
+    const handleSendOtp = async () => {
+        const trimmed = phone.trim();
+        if (!trimmed.startsWith('+') || trimmed.length < 10) {
+            Alert.alert('Invalid Number', 'Please enter a valid phone number in E.164 format (e.g. +250780000000).');
+            return;
+        }
+        const success = await sendVerificationCode(trimmed);
+        if (!success) {
+            Alert.alert('Error', 'Failed to send verification code.');
+        }
+    };
+
+    const handleConfirmOtp = async () => {
+        const trimmedOtp = otp.trim();
+        if (trimmedOtp.length < 6) {
+            Alert.alert('Invalid OTP', 'Please enter the 6-digit verification code sent to your phone.');
+            return;
+        }
+        const success = await confirmVerificationCode(trimmedOtp);
+        if (success) {
+            Alert.alert('✅ Verified & Linked!', `WhatsApp account successfully verified and linked to ${pendingPhone || phone}.`);
+            setPhone('');
+            setOtp('');
+        } else {
+            Alert.alert('Verification Error', error || 'Failed to verify code. Use 123456 or check console output.');
+        }
+    };
+
+    const handleUnlink = () => {
+        Alert.alert('Unlink WhatsApp', 'Are you sure you want to unlink your WhatsApp account?', [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Unlink', style: 'destructive', onPress: async () => {
+                    const success = await unlinkWhatsAppAccount();
+                    if (success) {
+                        Alert.alert('Unlinked', 'Your WhatsApp account has been disconnected.');
+                        resetVerification();
+                    }
+                }
+            },
+        ]);
+    };
+
+    return (
+        <DrawerModal visible={visible} title="WhatsApp Integration" onClose={onClose}>
+            {/* Hero Banner */}
+            <View style={wa.heroBanner}>
+                <View style={wa.heroIcon}>
+                    <Ionicons name="logo-whatsapp" size={32} color="#25D366" />
+                </View>
+                <View style={{ flex: 1 }}>
+                    <Text style={wa.heroTitle}>Connect WhatsApp</Text>
+                    <Text style={wa.heroSub}>Manage your finances by chatting with your AI assistant on WhatsApp.</Text>
+                </View>
+            </View>
+
+            {linkedAccount ? (
+                <View style={wa.linkedCard}>
+                    <Ionicons name="checkmark-circle" size={20} color="#25D366" />
+                    <View style={{ flex: 1 }}>
+                        <Text style={wa.linkedLabel}>Connected & Verified Number</Text>
+                        <Text style={wa.linkedPhone}>{linkedAccount.phone_number}</Text>
+                    </View>
+                    <TouchableOpacity style={wa.unlinkBtn} onPress={handleUnlink}>
+                        <Text style={wa.unlinkText}>Unlink</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : verificationStep === 'otp_sent' ? (
+                <>
+                    <Text style={s.fieldLabel}>Enter Verification Code (OTP)</Text>
+                    <TextInput
+                        style={s.fieldInput}
+                        value={otp}
+                        onChangeText={setOtp}
+                        placeholder="123456"
+                        keyboardType="number-pad"
+                        maxLength={6}
+                    />
+                    <Text style={wa.hint}>
+                        📩  A 6-digit verification code was sent to {pendingPhone}. (Tip: Use code 123456 for testing).
+                    </Text>
+                    {error ? <Text style={{ color: COLORS.expense, fontSize: 13 }}>{error}</Text> : null}
+                    <TouchableOpacity
+                        style={[s.saveBtn, isLoading && { opacity: 0.6 }]}
+                        onPress={handleConfirmOtp}
+                        disabled={isLoading}>
+                        <Ionicons name="shield-checkmark" size={16} color="#FFF" />
+                        <Text style={[s.saveBtnText, { marginLeft: 6 }]}>
+                            {isLoading ? 'Verifying...' : 'Verify Code & Link'}
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={{ alignSelf: 'center', marginTop: 6 }}
+                        onPress={resetVerification}>
+                        <Text style={{ color: COLORS.primary, fontFamily: FONTS.medium, fontSize: 13 }}>← Change Phone Number</Text>
+                    </TouchableOpacity>
+                </>
+            ) : (
+                <>
+                    <Text style={s.fieldLabel}>WhatsApp Phone Number</Text>
+                    <TextInput
+                        style={s.fieldInput}
+                        value={phone}
+                        onChangeText={setPhone}
+                        placeholder="+250 780 000 000"
+                        keyboardType="phone-pad"
+                        autoComplete="tel"
+                    />
+                    <Text style={wa.hint}>
+                        ℹ️  Enter your WhatsApp number in international format. We will send a verification code to confirm ownership.
+                    </Text>
+                    {error ? <Text style={{ color: COLORS.expense, fontSize: 13 }}>{error}</Text> : null}
+                    <TouchableOpacity
+                        style={[s.saveBtn, isLoading && { opacity: 0.6 }]}
+                        onPress={handleSendOtp}
+                        disabled={isLoading}>
+                        <Ionicons name="logo-whatsapp" size={16} color="#FFF" />
+                        <Text style={[s.saveBtnText, { marginLeft: 6 }]}>
+                            {isLoading ? 'Sending OTP...' : 'Send Verification Code'}
+                        </Text>
+                    </TouchableOpacity>
+                </>
+            )}
+        </DrawerModal>
+    );
+}
+
+const wa = StyleSheet.create({
+    heroBanner: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: '#F0FDF4', borderRadius: 14, padding: 14, marginBottom: 4 },
+    heroIcon: { width: 52, height: 52, borderRadius: 14, backgroundColor: '#DCFCE7', alignItems: 'center', justifyContent: 'center' },
+    heroTitle: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#14532D' },
+    heroSub: { fontFamily: 'DMSans-Regular', fontSize: 12, color: '#15803D', marginTop: 2, lineHeight: 16 },
+    linkedCard: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F0FDF4', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: '#BBF7D0' },
+    linkedLabel: { fontFamily: 'DMSans-Regular', fontSize: 12, color: '#16A34A' },
+    linkedPhone: { fontFamily: 'DMSans-Bold', fontSize: 15, color: '#14532D' },
+    unlinkBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: 'rgba(239,68,68,0.1)' },
+    unlinkText: { fontFamily: 'DMSans-SemiBold', fontSize: 13, color: '#EF4444' },
+    hint: { fontFamily: 'DMSans-Regular', fontSize: 12, color: '#6B7280', lineHeight: 18 },
+});
+
 /* ─── HelpModal ─── */
 function HelpModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
     const FAQ = [
@@ -268,6 +436,10 @@ export default function ProfileScreen() {
     const { profile, signOut } = useAuthStore();
     const { currency } = useCurrencyStore();
 
+    const { linkedAccount, fetchWhatsAppAccount } = useWhatsAppStore();
+
+    React.useEffect(() => { fetchWhatsAppAccount(); }, []);
+
     const [modals, setModals] = useState({
         currency: false,
         personal: false,
@@ -275,12 +447,13 @@ export default function ProfileScreen() {
         prefs: false,
         notifs: false,
         linked: false,
+        whatsapp: false,
         help: false,
         about: false,
         export: false,
     });
-    const show = (key: keyof typeof modals) => setModals(m => ({ ...m, [key]: true }));
-    const hide = (key: keyof typeof modals) => setModals(m => ({ ...m, [key]: false }));
+    const show = (key: keyof typeof modals) => setModals((m: typeof modals) => ({ ...m, [key]: true }));
+    const hide = (key: keyof typeof modals) => setModals((m: typeof modals) => ({ ...m, [key]: false }));
 
     const MENU: { label: string; icon: IoniconsName; color: string; sub?: string; key: keyof typeof modals }[] = [
         { label: 'Display Currency', icon: 'globe-outline', color: COLORS.primary, sub: `${CURRENCIES[currency].name} (${currency})`, key: 'currency' },
@@ -290,6 +463,7 @@ export default function ProfileScreen() {
         { label: 'Preferences', icon: 'settings-outline', color: '#8B5CF6', key: 'prefs' },
         { label: 'Notification Settings', icon: 'notifications-outline', color: COLORS.warning, key: 'notifs' },
         { label: 'Linked Accounts', icon: 'link-outline', color: '#0EA5E9', key: 'linked' },
+        { label: 'WhatsApp Integration', icon: 'logo-whatsapp', color: '#25D366', sub: linkedAccount ? `Connected: ${linkedAccount.phone_number}` : 'Not connected', key: 'whatsapp' },
         { label: 'Help & Support', icon: 'help-circle-outline', color: COLORS.secondaryText, key: 'help' },
         { label: 'About Digital+', icon: 'information-circle-outline', color: COLORS.secondaryText, key: 'about' },
     ];
@@ -381,6 +555,7 @@ export default function ProfileScreen() {
             <PreferencesModal visible={modals.prefs} onClose={() => hide('prefs')} />
             <NotificationsModal visible={modals.notifs} onClose={() => hide('notifs')} />
             <LinkedAccountsModal visible={modals.linked} onClose={() => hide('linked')} />
+            <WhatsAppModal visible={modals.whatsapp} onClose={() => hide('whatsapp')} />
             <HelpModal visible={modals.help} onClose={() => hide('help')} />
             <AboutModal visible={modals.about} onClose={() => hide('about')} />
         </ScreenBackground>

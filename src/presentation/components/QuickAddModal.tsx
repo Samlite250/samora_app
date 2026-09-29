@@ -26,14 +26,7 @@ const CATEGORIES = {
     income: ['Salary', 'Freelance', 'Business', 'Investment', 'Gift', 'Other'],
 };
 
-// Exact wallet names matching mockData & useAppDataStore
-const WALLETS = [
-    'MTN Mobile Money',
-    'BK Current Account',
-    'I&M Savings Account',
-    'Cash Wallet',
-    'Equity Visa Card',
-];
+// Bug 5 fix: removed static WALLETS array. Will fetch dynamic wallet names from useAppDataStore.
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     visible,
@@ -41,16 +34,31 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     onSave,
     initialType = 'expense',
 }) => {
+    const { currency } = useCurrencyStore();
+    const { wallets: storeWallets, addTransaction } = useAppDataStore();
+
+    // Bug 5 fix: Generate dynamic list of wallets
+    const walletNames = storeWallets.map(w => w.name);
+
     const [type, setType] = useState<'income' | 'expense'>(initialType === 'income' ? 'income' : 'expense');
     const [amount, setAmount] = useState('');
     const [category, setCategory] = useState(CATEGORIES.expense[0]);
-    const [wallet, setWallet] = useState(WALLETS[0]);
+    const [wallet, setWallet] = useState(walletNames[0] || '');
     const [description, setDescription] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
     const [isCurrencyModalOpen, setIsCurrencyModalOpen] = useState(false);
 
-    const { currency } = useCurrencyStore();
-    const { wallets: storeWallets, addTransaction } = useAppDataStore();
+    // Bug 6 fix: sync initialType when modal un-hides so that if you click
+    // "Income" then close it and click "Expense", it updates correctly.
+    React.useEffect(() => {
+        if (visible) {
+            setType(initialType === 'income' ? 'income' : 'expense');
+            setCategory(CATEGORIES[initialType === 'income' ? 'income' : 'expense'][0]);
+            // Default to first available stored wallet
+            setWallet(storeWallets.length > 0 ? storeWallets[0].name : '');
+            setErrorMsg('');
+        }
+    }, [visible, initialType, storeWallets]);
 
     const handleSave = async () => {
         setErrorMsg('');
@@ -99,7 +107,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     };
 
     return (
-        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+        <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} >
             <View style={styles.overlay}>
                 <View style={styles.modalCard}>
                     {/* Header */}
@@ -168,7 +176,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                         {/* Wallet Selector */}
                         <Text style={styles.label}>Wallet / Account</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pillRow}>
-                            {WALLETS.map((w) => (
+                            {walletNames.map((w) => (
                                 <TouchableOpacity
                                     key={w}
                                     style={[styles.pill, wallet === w && styles.pillActive]}
@@ -200,7 +208,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                     />
                 </View>
             </View>
-        </Modal>
+        </Modal >
     );
 };
 

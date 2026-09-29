@@ -3,8 +3,8 @@ export interface WalletRecord {
     name: string;
     type: 'Mobile Money' | 'Bank Account' | 'Savings' | 'Cash' | 'Credit Card';
     balance: number; // in RWF
-    color: string;
-    icon: string;
+    color?: string;
+    icon?: string;
 }
 
 export interface TransactionRecord {
@@ -14,7 +14,7 @@ export interface TransactionRecord {
     amount: number; // in RWF
     category: string;
     wallet_id: string;
-    wallet_name: string;
+    wallet_name?: string;
     date: string;
     notes?: string;
 }

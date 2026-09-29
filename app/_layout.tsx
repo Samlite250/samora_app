@@ -24,12 +24,16 @@ import { useCurrencyStore } from '../src/store/useCurrencyStore';
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
-    const { isBiometricEnabled } = useAuthStore();
+    const { isBiometricEnabled, isAuthenticated, session } = useAuthStore();
     const { fetchLiveRates } = useCurrencyStore();
-    const { checkUpcomingBills, checkGoalProgress, checkPlanReminders } = useAppDataStore();
+    const { checkUpcomingBills, checkGoalProgress, checkPlanReminders, fetchData } = useAppDataStore();
     const [isUnlocked, setIsUnlocked] = useState(false);
 
     useEffect(() => {
+        if (isAuthenticated) {
+            fetchData();
+        }
+
         // Delay startup alerts to ensure native UI is fully mounted before Alert is called
         const timeout = setTimeout(() => {
             try { fetchLiveRates(); } catch (e) { }
@@ -38,7 +42,7 @@ export default function RootLayout() {
             try { checkPlanReminders(); } catch (e) { }
         }, 2000);
         return () => clearTimeout(timeout);
-    }, []);
+    }, [isAuthenticated, session]);
 
     const [fontsLoaded] = useFonts({
         'DMSans-Regular': DMSans_400Regular,

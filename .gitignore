@@ -42,3 +42,8 @@ example
 # generated native folders
 /ios
 /android
+
+# temp logs & cache
+install_log.txt
+supabase/.temp/
+

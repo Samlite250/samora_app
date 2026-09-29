@@ -32,7 +32,11 @@ const WALLET_TYPES = ['Bank Account', 'Mobile Money', 'Savings', 'Cash', 'Credit
 export default function WalletScreen() {
     const router = useRouter();
     const { formatAmount } = useCurrencyStore();
-    const { wallets, addWallet, deleteWallet, editWallet } = useAppDataStore();
+    const { wallets, transactions, addWallet, deleteWallet, editWallet } = useAppDataStore();
+
+    // Bug 7 fix: Compute actual totals from all transactions
+    const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+    const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
 
     // Modals state
     const [selectedWallet, setSelectedWallet] = useState<WalletRecord | null>(null);
@@ -125,13 +129,13 @@ export default function WalletScreen() {
                             <View style={styles.statItem}>
                                 <View style={[styles.statDot, { backgroundColor: COLORS.success }]} />
                                 <Text style={styles.statLabel}>Income</Text>
-                                <Text style={[styles.statValue, { color: COLORS.success }]}>{formatAmount(2850000)}</Text>
+                                <Text style={[styles.statValue, { color: COLORS.success }]}>{formatAmount(totalIncome)}</Text>
                             </View>
                             <View style={styles.statDivider} />
                             <View style={styles.statItem}>
                                 <View style={[styles.statDot, { backgroundColor: COLORS.expense }]} />
                                 <Text style={styles.statLabel}>Expenses</Text>
-                                <Text style={[styles.statValue, { color: COLORS.expense }]}>{formatAmount(533500)}</Text>
+                                <Text style={[styles.statValue, { color: COLORS.expense }]}>{formatAmount(totalExpense)}</Text>
                             </View>
                         </View>
 

@@ -20,9 +20,10 @@ CREATE TABLE public.wallets (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
-  type TEXT NOT NULL, -- e.g., 'Bank Account', 'Mobile Money', 'Cash', 'Credit Card'
+  type TEXT NOT NULL,
   balance DECIMAL(12,2) DEFAULT 0,
   color TEXT,
+  icon TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -42,12 +43,12 @@ CREATE TABLE public.transactions (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   wallet_id UUID REFERENCES public.wallets(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
-  type TEXT NOT NULL, -- 'income', 'expense', 'transfer'
+  category TEXT NOT NULL,
+  type TEXT NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   title TEXT NOT NULL,
   notes TEXT,
-  date TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  date DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -55,11 +56,12 @@ CREATE TABLE public.transactions (
 CREATE TABLE public.budgets (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
-  category_id UUID REFERENCES public.categories(id) ON DELETE CASCADE,
-  amount DECIMAL(12,2) NOT NULL,
-  period TEXT DEFAULT 'monthly', -- 'monthly', 'weekly', 'yearly'
-  start_date DATE NOT NULL,
-  end_date DATE,
+  category TEXT NOT NULL,
+  spent DECIMAL(12,2) DEFAULT 0,
+  total DECIMAL(12,2) NOT NULL,
+  icon TEXT,
+  color TEXT,
+  pct INTEGER DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -71,7 +73,9 @@ CREATE TABLE public.goals (
   target_amount DECIMAL(12,2) NOT NULL,
   current_amount DECIMAL(12,2) DEFAULT 0,
   deadline DATE,
-  image_url TEXT,
+  category TEXT,
+  icon TEXT,
+  color TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -82,8 +86,40 @@ CREATE TABLE public.bills (
   title TEXT NOT NULL,
   amount DECIMAL(12,2) NOT NULL,
   due_date DATE NOT NULL,
+  category TEXT,
   is_paid BOOLEAN DEFAULT false,
-  recurring_type TEXT, -- 'none', 'monthly', 'yearly', 'weekly'
+  provider TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 8. Plans
+CREATE TABLE public.plans (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  note TEXT NOT NULL,
+  completed BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 9. WhatsApp Integration
+CREATE TABLE public.whatsapp_accounts (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  phone_number TEXT NOT NULL UNIQUE,
+  is_verified BOOLEAN DEFAULT false,
+  last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE public.whatsapp_messages (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  whatsapp_account_id UUID REFERENCES public.whatsapp_accounts(id) ON DELETE CASCADE,
+  direction TEXT NOT NULL, -- 'inbound', 'outbound'
+  message_type TEXT DEFAULT 'text', -- 'text', 'interactive'
+  body TEXT NOT NULL,
+  whatsapp_message_id TEXT, -- Original ID from Meta
+  status TEXT DEFAULT 'processed',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -99,6 +135,9 @@ ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.budgets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.goals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bills ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.plans ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.whatsapp_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.whatsapp_messages ENABLE ROW LEVEL SECURITY;
 
 -- Profiles: Users can read and update their own profile
 CREATE POLICY "Users can view own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
@@ -111,6 +150,9 @@ CREATE POLICY "Users can full access own transactions" ON public.transactions FO
 CREATE POLICY "Users can full access own budgets" ON public.budgets FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can full access own goals" ON public.goals FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can full access own bills" ON public.bills FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can full access own plans" ON public.plans FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can full access own whatsapp accounts" ON public.whatsapp_accounts FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can full access own whatsapp messages" ON public.whatsapp_messages FOR ALL USING (whatsapp_account_id IN (SELECT id FROM public.whatsapp_accounts WHERE user_id = auth.uid()));
 
 -- Create a Trigger to auto-create Profile row when user registers in Supabase Auth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
