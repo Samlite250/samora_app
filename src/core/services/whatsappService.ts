@@ -28,8 +28,8 @@ export async function getWhatsAppAccount(userId: string): Promise<WhatsAppAccoun
 }
 
 /** Link or update WhatsApp account (initiates linking/verification) */
-export async function linkWhatsAppAccount(userId: string, phoneNumber: string, isVerified: boolean = false): Promise<WhatsAppAccountRecord | null> {
-    if (!supabase) return null;
+export async function linkWhatsAppAccount(userId: string, phoneNumber: string, isVerified: boolean = false): Promise<WhatsAppAccountRecord> {
+    if (!supabase) throw new Error('Supabase client not initialized');
     const existing = await getWhatsAppAccount(userId);
 
     if (existing) {
@@ -44,10 +44,7 @@ export async function linkWhatsAppAccount(userId: string, phoneNumber: string, i
             .select()
             .single();
 
-        if (error) {
-            console.error('[whatsappService] update WhatsApp account error:', error);
-            return null;
-        }
+        if (error) throw new Error(error.message);
         return data as WhatsAppAccountRecord;
     } else {
         const { data, error } = await supabase
@@ -60,10 +57,7 @@ export async function linkWhatsAppAccount(userId: string, phoneNumber: string, i
             .select()
             .single();
 
-        if (error) {
-            console.error('[whatsappService] create WhatsApp account error:', error);
-            return null;
-        }
+        if (error) throw new Error(error.message);
         return data as WhatsAppAccountRecord;
     }
 }

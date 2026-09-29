@@ -263,7 +263,8 @@ function WhatsAppModal({ visible, onClose }: { visible: boolean; onClose: () => 
             setPhone('');
             setOtp('');
         } else {
-            Alert.alert('Verification Error', error || 'Failed to verify code. Use 123456 or check console output.');
+            const latestError = useWhatsAppStore.getState().error;
+            Alert.alert('Verification Error', latestError || 'Failed to verify code. Use 123456 or check console output.');
         }
     };
 
