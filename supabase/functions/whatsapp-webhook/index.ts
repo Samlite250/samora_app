@@ -18,9 +18,12 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const VERIFY_TOKEN =
     Deno.env.get("META_WA_VERIFY_TOKEN") ||
     "digital_plus_whatsapp_webhook_verify_token_2026";
-const PHONE_NUMBER_ID = Deno.env.get("META_WA_PHONE_NUMBER_ID") || "";
-const ACCESS_TOKEN = Deno.env.get("META_WA_ACCESS_TOKEN") || "";
-const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const PHONE_NUMBER_ID =
+    Deno.env.get("META_WA_PHONE_NUMBER_ID") || "1348757668319836";
+const ACCESS_TOKEN =
+    Deno.env.get("META_WA_ACCESS_TOKEN") ||
+    "EAANuqb1gGPMBSpkaR5f7w8THysn8qvk1cpzdOQt8H4RQb371SBrB0ZBUZCAOVZBf9l931cTY3ib2RxmMXT6OdQMH1gwqBEdcNWu8ycNK6j9WCZA6xVV5bz4YufXehk3uJxTHh3pmFcxQSYwaClKEkzwLejxyKusO1JSSeD25VIehe8FHzDpYbZBZCPTwwlvovDqu6zCirG2duQZCpa4DVzj0orqRlgigERZAAg4gVBVsZBFjWuqr72hHpIMsnQwwQHKjG1QS56EdVeYloZBzPzrmSzKgZDZD";
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://rtwraiaqctfwgtdrygrr.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
 const META_API_VERSION = "v20.0";
