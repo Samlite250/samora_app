@@ -80,10 +80,12 @@ function formatRelativeTime(dateStr: string): string {
 
 // ─── Meta WhatsApp Cloud API Service ─────────────────────────────────────────
 async function sendTextMessage(toPhone: string, body: string): Promise<boolean> {
-    const sanitized = toPhone.replace(/^\+/, "");
-    const url = `https://graph.facebook.com/${META_API_VERSION}/${PHONE_NUMBER_ID}/messages`;
+    const sanitized = toPhone.replace(/\D/g, "");
+    const phoneId = Deno.env.get("META_WA_PHONE_NUMBER_ID") || PHONE_NUMBER_ID;
+    const token = Deno.env.get("META_WA_ACCESS_TOKEN") || ACCESS_TOKEN;
+    const url = `https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`;
 
-    if (!ACCESS_TOKEN) {
+    if (!token) {
         console.warn("[CloudAPI] ACCESS_TOKEN missing.");
         return false;
     }
@@ -92,7 +94,7 @@ async function sendTextMessage(toPhone: string, body: string): Promise<boolean> 
         const res = await fetch(url, {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
+                Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -103,6 +105,10 @@ async function sendTextMessage(toPhone: string, body: string): Promise<boolean> 
                 text: { preview_url: false, body },
             }),
         });
+        const resJson = await res.json();
+        if (!res.ok) {
+            console.error("[CloudAPI] Text message error:", resJson);
+        }
         return res.ok;
     } catch (err) {
         console.error("[CloudAPI] Text fetch exception:", err);
@@ -120,16 +126,18 @@ async function sendInteractiveList(
         rows: { id: string; title: string; description?: string }[];
     }[]
 ): Promise<boolean> {
-    const sanitized = toPhone.replace(/^\+/, "");
-    const url = `https://graph.facebook.com/${META_API_VERSION}/${PHONE_NUMBER_ID}/messages`;
+    const sanitized = toPhone.replace(/\D/g, "");
+    const phoneId = Deno.env.get("META_WA_PHONE_NUMBER_ID") || PHONE_NUMBER_ID;
+    const token = Deno.env.get("META_WA_ACCESS_TOKEN") || ACCESS_TOKEN;
+    const url = `https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`;
 
-    if (!ACCESS_TOKEN) return false;
+    if (!token) return false;
 
     try {
         const res = await fetch(url, {
             method: "POST",
             headers: {
-                Authorization: `Bearer ${ACCESS_TOKEN}`,
+                Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
@@ -155,6 +163,10 @@ async function sendInteractiveList(
                 },
             }),
         });
+        const resJson = await res.json();
+        if (!res.ok) {
+            console.error("[CloudAPI] Interactive list error:", resJson);
+        }
         return res.ok;
     } catch (err) {
         console.error("[CloudAPI] List fetch exception:", err);
@@ -231,11 +243,39 @@ async function getWhatsAppAccountAndProfile(phone: string): Promise<{ account: a
     const sb = getSupabase();
     if (!sb) return null;
 
-    const { data: account } = await sb
+    const rawDigits = phone.replace(/\D/g, ""); // e.g. "250780112019"
+    const formattedWithPlus = "+" + rawDigits;
+
+    // 1. Try exact match first
+    let { data: account } = await sb
         .from("whatsapp_accounts")
         .select("*")
         .eq("phone_number", phone.trim())
         .maybeSingle();
+
+    if (!account) {
+        // 2. Try match with leading '+'
+        const { data: accPlus } = await sb
+            .from("whatsapp_accounts")
+            .select("*")
+            .eq("phone_number", formattedWithPlus)
+            .maybeSingle();
+        account = accPlus;
+    }
+
+    if (!account) {
+        // 3. Fallback: fetch accounts and match digits
+        const { data: accounts } = await sb
+            .from("whatsapp_accounts")
+            .select("*");
+
+        if (accounts && accounts.length > 0) {
+            account = accounts.find((acc: any) => {
+                const accDigits = (acc.phone_number || "").replace(/\D/g, "");
+                return accDigits === rawDigits || accDigits.slice(-9) === rawDigits.slice(-9);
+            }) || null;
+        }
+    }
 
     if (!account || !account.is_verified) return null;
 
