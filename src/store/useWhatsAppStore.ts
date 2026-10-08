@@ -119,9 +119,14 @@ export const useWhatsAppStore = create<WhatsAppState>()((set, get) => ({
             const resData = await response.json();
             console.log('[useWhatsAppStore] Edge function link_account response:', resData);
 
-            if (resData.success && resData.account) {
+            if (resData.success) {
                 set({
-                    linkedAccount: resData.account,
+                    linkedAccount: resData.account || {
+                        id: 'edge-linked-id',
+                        user_id: userId,
+                        phone_number: pendingPhone,
+                        is_verified: true,
+                    },
                     verificationStep: 'verified',
                     pendingPhone: null,
                     generatedOtp: null,
@@ -130,16 +135,10 @@ export const useWhatsAppStore = create<WhatsAppState>()((set, get) => ({
                 return true;
             }
 
-            // Fallback to linkService
-            const account = await linkService(userId, pendingPhone, true);
-            set({
-                linkedAccount: account,
-                verificationStep: 'verified',
-                pendingPhone: null,
-                generatedOtp: null,
-                isLoading: false,
-            });
-            return true;
+            // If Edge Function returned an error message
+            console.warn('[useWhatsAppStore] Link account response error:', resData.error);
+            set({ error: resData.error || 'Account linking failed', isLoading: false });
+            return false;
         } catch (err: any) {
             console.error('[useWhatsAppStore] Verification error:', err);
             set({ error: err?.message || 'Verification failed', isLoading: false });

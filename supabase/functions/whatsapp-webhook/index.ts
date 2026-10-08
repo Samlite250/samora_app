@@ -810,11 +810,45 @@ serve(async (req: Request) => {
                     });
                 }
 
-                // If no userId provided, use a default fallback user or existing profile
-                let targetUserId = userId;
-                if (!targetUserId || targetUserId === "mock-user-id") {
-                    const { data: firstProfile } = await sb.from("profiles").select("id").limit(1).maybeSingle();
-                    targetUserId = firstProfile?.id || "00000000-0000-0000-0000-000000000000";
+                // Validate UUID format
+                const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                let targetUserId = (userId && uuidRegex.test(userId)) ? userId : null;
+
+                // Check if targetUserId exists in profiles
+                if (targetUserId) {
+                    const { data: existingProf } = await sb.from("profiles").select("id").eq("id", targetUserId).maybeSingle();
+                    if (!existingProf) {
+                        targetUserId = null;
+                    }
+                }
+
+                // If not found, use the first available profile
+                if (!targetUserId) {
+                    const { data: profiles } = await sb.from("profiles").select("id").limit(1);
+                    if (profiles && profiles.length > 0) {
+                        targetUserId = profiles[0].id;
+                    }
+                }
+
+                // If still no profile exists, create a system user via Admin Auth API
+                if (!targetUserId) {
+                    try {
+                        const { data: newUser } = await sb.auth.admin.createUser({
+                            email: `wa_${Date.now()}@digitalplus.app`,
+                            email_confirm: true,
+                            user_metadata: { first_name: "Digital+", last_name: "User" },
+                        });
+                        targetUserId = newUser?.user?.id || null;
+                    } catch (adminErr) {
+                        console.error("[Edge] Admin createUser exception:", adminErr);
+                    }
+                }
+
+                if (!targetUserId) {
+                    return new Response(JSON.stringify({ error: "Unable to create or locate user profile" }), {
+                        status: 500,
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                    });
                 }
 
                 const rawDigits = phone.replace(/\D/g, "");
