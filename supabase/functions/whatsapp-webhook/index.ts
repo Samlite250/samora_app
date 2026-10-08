@@ -706,6 +706,16 @@ async function processMessage(msg: InboundMessage): Promise<void> {
 serve(async (req: Request) => {
     const url = new URL(req.url);
 
+    // 0. CORS preflight
+    if (req.method === "OPTIONS") {
+        return new Response("ok", {
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+            },
+        });
+    }
+
     // 1. GET — Meta Webhook Challenge Verification
     if (req.method === "GET") {
         const mode = url.searchParams.get("hub.mode");
@@ -720,10 +730,35 @@ serve(async (req: Request) => {
         return new Response("Forbidden", { status: 403 });
     }
 
-    // 2. POST — Inbound Notification Events
+    // 2. POST — Inbound Notification Events & App Actions
     if (req.method === "POST") {
         try {
             const body = await req.json();
+
+            // Custom Action: Send OTP via WhatsApp
+            if (body?.action === "send_otp") {
+                const { phone, code } = body;
+                if (!phone || !code) {
+                    return new Response(JSON.stringify({ error: "Missing phone or code" }), {
+                        status: 400,
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Access-Control-Allow-Origin": "*",
+                        },
+                    });
+                }
+                const message = `🔑 *Digital+ Security Code*\n\nYour WhatsApp verification code is: *${code}*\n\nDo not share this code with anyone.`;
+                const sent = await sendTextMessage(phone, message);
+                console.log(`[Edge] OTP send status for ${phone}: ${sent}`);
+                return new Response(JSON.stringify({ success: sent }), {
+                    status: sent ? 200 : 500,
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Access-Control-Allow-Origin": "*",
+                    },
+                });
+            }
+
             const msg = parsePayload(body);
 
             if (msg) {
@@ -732,13 +767,19 @@ serve(async (req: Request) => {
 
             return new Response(JSON.stringify({ status: "EVENT_RECEIVED" }), {
                 status: 200,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             });
         } catch (err) {
             console.error("[Edge] Error processing webhook:", err);
             return new Response(JSON.stringify({ status: "ERROR" }), {
                 status: 500,
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
             });
         }
     }

@@ -53,18 +53,37 @@ export const useWhatsAppStore = create<WhatsAppState>()((set, get) => ({
     sendVerificationCode: async (phoneNumber: string) => {
         set({ isLoading: true, error: null });
         try {
-            // Generate a 6-digit mock OTP code for identity verification
+            // Ensure international + format (e.g. +250780112019)
+            const formattedPhone = phoneNumber.startsWith('+') ? phoneNumber.trim() : '+' + phoneNumber.trim();
+
+            // Generate a 6-digit OTP code for identity verification
             const code = Math.floor(100000 + Math.random() * 900000).toString();
+
+            // Dispatch OTP code via Supabase Edge Function to WhatsApp
+            const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rtwraiaqctfwgtdrygrr.supabase.co';
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/whatsapp-webhook`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'send_otp', phone: formattedPhone, code }),
+            });
+
+            const resData = await response.json();
+            if (!response.ok || !resData.success) {
+                console.warn('[useWhatsAppStore] Edge function OTP dispatch warning:', resData);
+            }
+
             set({
-                pendingPhone: phoneNumber,
+                pendingPhone: formattedPhone,
                 verificationStep: 'otp_sent',
                 generatedOtp: code,
                 isLoading: false,
             });
-            console.log(`[useWhatsAppStore] Verification OTP sent to ${phoneNumber}: ${code}`);
+            console.log(`[useWhatsAppStore] Verification OTP sent to ${formattedPhone}: ${code}`);
             return true;
         } catch (err: any) {
-            set({ error: 'Failed to send OTP code', isLoading: false });
+            console.error('[useWhatsAppStore] Error sending OTP code:', err);
+            set({ error: 'Failed to send OTP code to WhatsApp', isLoading: false });
             return false;
         }
     },
