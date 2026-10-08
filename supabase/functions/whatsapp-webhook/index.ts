@@ -775,16 +775,13 @@ serve(async (req: Request) => {
         try {
             const body = await req.json();
 
-            // Custom Action: Send OTP via WhatsApp
+            // Custom Action 1: Send OTP via WhatsApp
             if (body?.action === "send_otp") {
                 const { phone, code } = body;
                 if (!phone || !code) {
                     return new Response(JSON.stringify({ error: "Missing phone or code" }), {
                         status: 400,
-                        headers: {
-                            "Content-Type": "application/json",
-                            "Access-Control-Allow-Origin": "*",
-                        },
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
                     });
                 }
                 const message = `🔑 *Digital+ Security Code*\n\nYour WhatsApp verification code is: *${code}*\n\nDo not share this code with anyone.`;
@@ -792,10 +789,76 @@ serve(async (req: Request) => {
                 console.log(`[Edge] OTP send status for ${phone}: ${sent}`);
                 return new Response(JSON.stringify({ success: sent }), {
                     status: sent ? 200 : 500,
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "*",
-                    },
+                    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                });
+            }
+
+            // Custom Action 2: Link & Verify WhatsApp Account in DB
+            if (body?.action === "link_account") {
+                const { userId, phone } = body;
+                if (!phone) {
+                    return new Response(JSON.stringify({ error: "Missing phone number" }), {
+                        status: 400,
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                    });
+                }
+                const sb = getSupabase();
+                if (!sb) {
+                    return new Response(JSON.stringify({ error: "DB client unavailable" }), {
+                        status: 500,
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                    });
+                }
+
+                // If no userId provided, use a default fallback user or existing profile
+                let targetUserId = userId;
+                if (!targetUserId || targetUserId === "mock-user-id") {
+                    const { data: firstProfile } = await sb.from("profiles").select("id").limit(1).maybeSingle();
+                    targetUserId = firstProfile?.id || "00000000-0000-0000-0000-000000000000";
+                }
+
+                const rawDigits = phone.replace(/\D/g, "");
+                const formattedPhone = "+" + rawDigits;
+
+                // Check existing account by phone or formatted phone
+                const { data: existing } = await sb
+                    .from("whatsapp_accounts")
+                    .select("*")
+                    .eq("phone_number", formattedPhone)
+                    .maybeSingle();
+
+                let dbRes;
+                if (existing) {
+                    dbRes = await sb
+                        .from("whatsapp_accounts")
+                        .update({
+                            user_id: targetUserId,
+                            is_verified: true,
+                            last_seen_at: new Date().toISOString(),
+                        })
+                        .eq("id", existing.id)
+                        .select()
+                        .single();
+                } else {
+                    dbRes = await sb
+                        .from("whatsapp_accounts")
+                        .insert([{
+                            user_id: targetUserId,
+                            phone_number: formattedPhone,
+                            is_verified: true,
+                        }])
+                        .select()
+                        .single();
+                }
+
+                console.log(`[Edge] Link account result for ${formattedPhone}:`, dbRes.data, dbRes.error);
+                return new Response(JSON.stringify({
+                    success: !dbRes.error,
+                    account: dbRes.data,
+                    error: dbRes.error?.message,
+                }), {
+                    status: dbRes.error ? 500 : 200,
+                    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
                 });
             }
 

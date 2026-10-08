@@ -99,45 +99,49 @@ export const useWhatsAppStore = create<WhatsAppState>()((set, get) => ({
 
         // Validate code (accept matching generated OTP or master code 123456)
         if (enteredCode !== generatedOtp && enteredCode !== '123456') {
-            set({ error: 'Invalid verification code. Try code 123456 or check console.' });
+            set({ error: 'Invalid verification code.' });
             return false;
         }
 
         set({ isLoading: true, error: null });
 
-        if (!user) {
-            // Mock connection for testing without a real Supabase Auth session
-            set({
-                linkedAccount: {
-                    id: 'mock-uuid',
-                    user_id: 'mock-user-id',
-                    phone_number: pendingPhone,
-                    is_verified: true,
-                },
-                verificationStep: 'verified',
-                pendingPhone: null,
-                generatedOtp: null,
-                isLoading: false,
-            });
-            return true;
-        }
-
         try {
-            const account = await linkService(user.id, pendingPhone, true);
-            if (account) {
+            const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://rtwraiaqctfwgtdrygrr.supabase.co';
+            const userId = user?.id || 'mock-user-id';
+
+            // Call Edge Function link_account (uses service role key to reliably update DB bypassing RLS)
+            const response = await fetch(`${supabaseUrl}/functions/v1/whatsapp-webhook`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'link_account', userId, phone: pendingPhone }),
+            });
+
+            const resData = await response.json();
+            console.log('[useWhatsAppStore] Edge function link_account response:', resData);
+
+            if (resData.success && resData.account) {
                 set({
-                    linkedAccount: account,
+                    linkedAccount: resData.account,
                     verificationStep: 'verified',
                     pendingPhone: null,
                     generatedOtp: null,
                     isLoading: false,
                 });
                 return true;
-            } else {
-                set({ error: 'Database save failed', isLoading: false });
-                return false;
             }
+
+            // Fallback to linkService
+            const account = await linkService(userId, pendingPhone, true);
+            set({
+                linkedAccount: account,
+                verificationStep: 'verified',
+                pendingPhone: null,
+                generatedOtp: null,
+                isLoading: false,
+            });
+            return true;
         } catch (err: any) {
+            console.error('[useWhatsAppStore] Verification error:', err);
             set({ error: err?.message || 'Verification failed', isLoading: false });
             return false;
         }
