@@ -84,8 +84,8 @@ function formatRelativeTime(dateStr: string): string {
 // ─── Meta WhatsApp Cloud API Service ─────────────────────────────────────────
 async function sendTextMessage(toPhone: string, body: string): Promise<boolean> {
     const sanitized = toPhone.replace(/\D/g, "");
-    const phoneId = Deno.env.get("META_WA_PHONE_NUMBER_ID") || PHONE_NUMBER_ID;
-    const token = Deno.env.get("META_WA_ACCESS_TOKEN") || ACCESS_TOKEN;
+    const phoneId = PHONE_NUMBER_ID || Deno.env.get("META_WA_PHONE_NUMBER_ID");
+    const token = ACCESS_TOKEN || Deno.env.get("META_WA_ACCESS_TOKEN");
     const url = `https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`;
 
     if (!token) {
@@ -130,8 +130,8 @@ async function sendInteractiveList(
     }[]
 ): Promise<boolean> {
     const sanitized = toPhone.replace(/\D/g, "");
-    const phoneId = Deno.env.get("META_WA_PHONE_NUMBER_ID") || PHONE_NUMBER_ID;
-    const token = Deno.env.get("META_WA_ACCESS_TOKEN") || ACCESS_TOKEN;
+    const phoneId = PHONE_NUMBER_ID || Deno.env.get("META_WA_PHONE_NUMBER_ID");
+    const token = ACCESS_TOKEN || Deno.env.get("META_WA_ACCESS_TOKEN");
     const url = `https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`;
 
     if (!token) return false;
