@@ -23,7 +23,7 @@ const ACCESS_TOKEN = Deno.env.get("META_WA_ACCESS_TOKEN") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-const META_API_VERSION = "v18.0";
+const META_API_VERSION = "v20.0";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface InboundMessage {
