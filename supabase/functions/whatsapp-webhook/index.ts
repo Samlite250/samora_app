@@ -802,7 +802,7 @@ serve(async (req: Request) => {
             const msg = parsePayload(body);
 
             if (msg) {
-                EdgeRuntime.waitUntil(processMessage(msg));
+                await processMessage(msg);
             }
 
             return new Response(JSON.stringify({ status: "EVENT_RECEIVED" }), {
