@@ -2,6 +2,7 @@
   "expo": {
     "name": "Digital+",
     "slug": "digital-plus-app",
+    "scheme": "digital-plus",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./digital_plus_logo.png",

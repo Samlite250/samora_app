@@ -414,7 +414,25 @@ async function sendWelcomeMenu(toPhone: string, firstName: string): Promise<bool
         },
     ];
 
-    return sendInteractiveList(toPhone, header, body, "Choose Option", sections);
+    const sent = await sendInteractiveList(toPhone, header, body, "Choose Option", sections);
+
+    // Fallback: if interactive list fails (e.g. 24h window expired), send plain text
+    if (!sent) {
+        console.warn(`[BotEngine] Interactive list failed for ${toPhone}, sending plain text fallback.`);
+        const fallback =
+            `👋 Hello, ${greetingName}! Welcome to Digital+.\n\n` +
+            `Reply with any of these commands:\n` +
+            `• *balance* — Check your wallets\n` +
+            `• *transactions* — Recent activity\n` +
+            `• *spent [amount] [category]* — Add expense\n` +
+            `• *income [amount] [source]* — Add income\n` +
+            `• *health* — Financial health score\n` +
+            `• *plans* — Upcoming plans & goals\n` +
+            `• *tasks* — Pending tasks`;
+        return sendTextMessage(toPhone, fallback);
+    }
+
+    return true;
 }
 
 /** 2. Check Balance Handler (Exact mockup layout) */
@@ -590,7 +608,7 @@ async function processMessage(msg: InboundMessage): Promise<void> {
 
     // Menu / Welcome
     if (
-        ["menu", "help", "hi", "hello", "start", "options"].includes(text) ||
+        ["menu", "help", "hi", "hey", "hello", "start", "options"].includes(text) ||
         msg.actionId === "btn_options" ||
         msg.actionId === "btn_menu"
     ) {
