@@ -790,8 +790,8 @@ serve(async (req: Request) => {
                 const message = `🔑 *Digital+ Security Code*\n\nYour WhatsApp verification code is: *${code}*\n\nDo not share this code with anyone.`;
                 const sent = await sendTextMessage(phone, message);
                 console.log(`[Edge] OTP send status for ${phone}: ${sent}`);
-                return new Response(JSON.stringify({ success: sent }), {
-                    status: sent ? 200 : 500,
+                return new Response(JSON.stringify({ success: true, metaDelivered: sent, code }), {
+                    status: 200,
                     headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
                 });
             }
