@@ -792,6 +792,44 @@ serve(async (req: Request) => {
                 });
             }
 
+            // Custom Action 0.1: Live Dynamic Token Update
+            if (body?.action === "set_token") {
+                const { newToken } = body;
+                if (!newToken || typeof newToken !== "string") {
+                    return new Response(JSON.stringify({ error: "Missing newToken string" }), { status: 400 });
+                }
+                const phoneId = PHONE_NUMBER_ID || Deno.env.get("META_WA_PHONE_NUMBER_ID");
+                // Test the new token immediately with Meta API
+                const testRes = await fetch(`https://graph.facebook.com/${META_API_VERSION}/${phoneId}/messages`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${newToken.trim()}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        messaging_product: "whatsapp",
+                        recipient_type: "individual",
+                        to: "250780112019",
+                        type: "text",
+                        text: { preview_url: false, body: "Digital+ system test: Token verified & active! 🚀" },
+                    }),
+                });
+                const testJson = await testRes.json();
+                console.log("[Edge] set_token test result:", testRes.status, testJson);
+
+                if (testRes.ok) {
+                    return new Response(JSON.stringify({ success: true, message: "Token verified & active!", metaResponse: testJson }), {
+                        status: 200,
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                    });
+                } else {
+                    return new Response(JSON.stringify({ success: false, error: testJson?.error?.message || "Token rejected by Meta", metaError: testJson }), {
+                        status: 400,
+                        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                    });
+                }
+            }
+
             // Custom Action 1: Send OTP via WhatsApp
             if (body?.action === "send_otp") {
                 const { phone, code } = body;
