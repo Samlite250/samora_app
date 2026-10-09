@@ -22,7 +22,7 @@ const PHONE_NUMBER_ID =
     Deno.env.get("META_WA_PHONE_NUMBER_ID") || "1348757668319836";
 const ACCESS_TOKEN =
     Deno.env.get("META_WA_ACCESS_TOKEN") ||
-    "EAANuqb1gGPMBSmbZBTUWPChRBfzTneR2jUR3SqxtHNf59Fn1Fju3bq5wIs8TUnGDk5RfC70KdFP8bdV3s2SpliYaZBRnnfbVGrHoIaLI9NWb5zS56fWZACRqCsZCqpYcv0YAZCgDRJg9SQGNEUL1E8kippx4afq4aFzcPRQGauZCIvcFqUmdrdexdPH9f4DgZDZD";
+    "EAANuqb1gGPMBSmvFG2y96OZBpQgaNmE02Tf6qZAZBF7OUDjdurYIr6Rx1pZBFAsZAGX0p1OIOMksPu9ZCa8s8ZCRasSJAJcImwgZBZAr3r3cScV9JEDjegSJEWVNhmn04FLS9it1zMzxXSfYUrOJ6jVRwSLkoF6JhaggCvaYYPKqFOLP8x82mMjwnujWUp90L2pQsb3ZAQy2CIWfjh1z2GRzrALmvKtxZCClrevlGB6ZAm2jhsnzJRLtdVgK3NlvoeZBVkbEwnsT2g8Lit6ZAjqKLklN0v";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "https://rtwraiaqctfwgtdrygrr.supabase.co";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
@@ -777,6 +777,20 @@ serve(async (req: Request) => {
     if (req.method === "POST") {
         try {
             const body = await req.json();
+
+            // Custom Action 0: Diagnostic Logs & DB Status
+            if (body?.action === "get_logs") {
+                const sb = getSupabase();
+                if (!sb) {
+                    return new Response(JSON.stringify({ error: "DB client unavailable" }), { status: 500 });
+                }
+                const { data: messages } = await sb.from("whatsapp_messages").select("*").order("created_at", { ascending: false }).limit(20);
+                const { data: accounts } = await sb.from("whatsapp_accounts").select("*").order("created_at", { ascending: false }).limit(20);
+                return new Response(JSON.stringify({ success: true, messages, accounts }), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+                });
+            }
 
             // Custom Action 1: Send OTP via WhatsApp
             if (body?.action === "send_otp") {
